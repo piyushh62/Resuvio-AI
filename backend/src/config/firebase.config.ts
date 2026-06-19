@@ -11,17 +11,28 @@ let auth: admin.auth.Auth;
 try {
     console.log('[firebase-config]: Attempting Firebase Admin SDK initialization...');
     const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (!serviceAccountPath) {
-        throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.');
-    }
+    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
 
-    // Resolve absolute path in case relative path is provided
-    const resolvedPath = path.resolve(serviceAccountPath);
+    let credential: admin.credential.Credential;
+
+    if (serviceAccountBase64) {
+        const decodedServiceAccount = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
+        credential = admin.credential.cert(JSON.parse(decodedServiceAccount));
+    } else if (serviceAccountJson) {
+        credential = admin.credential.cert(JSON.parse(serviceAccountJson));
+    } else if (serviceAccountPath) {
+        // Resolve absolute path in case relative path is provided
+        const resolvedPath = path.resolve(serviceAccountPath);
+        credential = admin.credential.cert(resolvedPath);
+    } else {
+        throw new Error('Set GOOGLE_APPLICATION_CREDENTIALS, FIREBASE_SERVICE_ACCOUNT_JSON, or FIREBASE_SERVICE_ACCOUNT_BASE64.');
+    }
 
     // Check if already initialized (useful for hot-reloading environments)
     if (admin.apps.length === 0) {
         admin.initializeApp({
-            credential: admin.credential.cert(resolvedPath)
+            credential
         });
         console.log('[firebase-config]: Firebase Admin SDK initialized successfully.');
     } else {
