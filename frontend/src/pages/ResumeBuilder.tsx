@@ -189,6 +189,51 @@ const mockResumeData: ResumeInputData = {
   targetJobDescription: "Seeking a challenging Senior Software Engineer position focused on building innovative and scalable solutions. Interested in roles that involve full-stack development, cloud architecture, and leading a team of talented engineers. The ideal company values collaboration, continuous learning, and making a positive impact through technology.",
 };
 
+const renderGeneratedResume = (text: string) => {
+  return text.split('\n').map((rawLine, index) => {
+    const line = rawLine.trim();
+
+    if (!line) {
+      return <div key={index} className="h-3" />;
+    }
+
+    if (/^-{3,}$/.test(line)) {
+      return <div key={index} className="my-4 border-t border-gray-200" />;
+    }
+
+    const boldMatch = line.match(/^\*\*(.+)\*\*$/);
+    if (boldMatch) {
+      const heading = boldMatch[1].trim();
+      const isName = index < 3;
+      return isName ? (
+        <h2 key={index} className="text-2xl font-bold tracking-wide text-gray-950">
+          {heading}
+        </h2>
+      ) : (
+        <h3 key={index} className="mt-5 text-sm font-bold uppercase tracking-[0.14em] text-blue-700">
+          {heading}
+        </h3>
+      );
+    }
+
+    const bulletMatch = line.match(/^[-*]\s+(.+)$/);
+    if (bulletMatch) {
+      return (
+        <div key={index} className="ml-4 flex gap-2 text-gray-700">
+          <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500" />
+          <span>{bulletMatch[1].replace(/\*\*/g, '')}</span>
+        </div>
+      );
+    }
+
+    return (
+      <p key={index} className="text-gray-700">
+        {line.replace(/\*\*/g, '')}
+      </p>
+    );
+  });
+};
+
 const ResumeBuilder = () => {
   const [activeTab, setActiveTab] = useState("personal");
   const [userInfo, setUserInfo] = useState<ResumeInputData>(initialUserInfo);
@@ -1039,8 +1084,10 @@ const ResumeBuilder = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[60vh] w-full p-6 font-mono text-sm leading-relaxed">
-                  <div className="whitespace-pre-wrap">{generatedText}</div>
+                <ScrollArea className="h-[60vh] w-full">
+                  <div className="space-y-1 p-6 text-[15px] leading-7">
+                    {renderGeneratedResume(generatedText)}
+                  </div>
                 </ScrollArea>
               </CardContent>
             </Card>
