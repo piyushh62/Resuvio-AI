@@ -11,9 +11,7 @@ import {
   Calendar, 
   CheckCircle2, 
   Clock, 
-  LineChart,
-  Loader2,
-  PlusCircle // Added for the new button
+  LineChart
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import apiClient from "@/lib/api"; // Corrected: Import default export
@@ -38,17 +36,20 @@ interface ActivityData {
   type: 'resume_upload' | 'resume_analysis' | 'job_match' | 'resume_generation'; // Example types
 }
 
-interface TaskData {
-  title: string;
-  description: string;
-  dueDate: string;
-}
-
 interface ResumeStrengthData {
   keywords: number;
   experience: number;
   skills: number;
   readability: number;
+}
+
+interface UploadedResumeSummary {
+  id: string;
+  overallScore?: number;
+}
+
+interface GeneratedResumeSummary {
+  id: string;
 }
 
 // Helper to get an icon based on activity type
@@ -71,7 +72,6 @@ export default function DashboardHome() {
   const [isLoading, setIsLoading] = useState(true);
   const [statsData, setStatsData] = useState<StatData[]>([]);
   const [recentActivitiesData, setRecentActivitiesData] = useState<ActivityData[]>([]);
-  const [upcomingTasksData, setUpcomingTasksData] = useState<TaskData[]>([]);
   const [resumeStrength, setResumeStrength] = useState<ResumeStrengthData | null>(null);
 
   // Current date greeting
@@ -86,112 +86,77 @@ export default function DashboardHome() {
     day: 'numeric'
   }).format(currentDate);
 
-  // Function to add mock activity data
-  const addMockActivity = () => {
-    const mockActivity: ActivityData = {
-      id: `mock-${Date.now()}`, // Unique ID
-      type: Math.random() > 0.5 ? 'resume_upload' : 'job_match', // Random type
-      title: `Mock Activity ${recentActivitiesData.length + 1}`,
-      description: 'This is a dynamically added mock activity.',
-      date: new Date().toLocaleString(),
-      icon: Math.random() > 0.5 ? getActivityIcon('resume_upload') : getActivityIcon('job_match'),
-    };
-    setRecentActivitiesData(prevActivities => [mockActivity, ...prevActivities]);
-  };
-
-  // Simulate data fetching
   useEffect(() => {
     const fetchData = async () => {
-      // Set isLoading to true initially
       setIsLoading(true);
 
-      // Set ALL placeholder/mock data for Stats, Tasks, Resume Strength, and Recent Activities immediately.
-      // This ensures they are populated for screenshots regardless of API call status.
-      setStatsData([
-        { 
-          title: "Resume Score", 
-          value: "78", 
-          trend: "+5%",
-          trendUp: true,
-          description: "Overall resume quality",
-          icon: <LineChart className="h-5 w-5 text-blue-500" />, 
-          color: "from-blue-500 to-indigo-600"
-        },
-        { 
-          title: "Job Match Rate", 
-          value: "62", 
-          trend: "-2%",
-          trendUp: false,
-          description: "Match to job postings",
-          icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />, 
-          color: "from-emerald-500 to-teal-600" 
-        },
-        { 
-          title: "Resumes Created", 
-          value: "3", 
-          description: "Total active resumes",
-          icon: <FileText className="h-5 w-5 text-violet-500" />, 
-          color: "from-violet-500 to-purple-600" 
-        },
-        { 
-          title: "Cover Letters", 
-          value: "1", 
-          description: "Generated cover letters",
-          icon: <FileEdit className="h-5 w-5 text-amber-500" />, 
-          color: "from-amber-500 to-orange-600" 
-        },
-      ]);
-      setUpcomingTasksData([
-        {
-          title: "Follow up with Acme Corp",
-          description: "Send a thank you email after interview.",
-          dueDate: "Tomorrow"
-        },
-        {
-          title: "Update LinkedIn Profile",
-          description: "Add new skills and projects.",
-          dueDate: "End of week"
-        }
-      ]);
-      setResumeStrength({ keywords: 85, experience: 70, skills: 90, readability: 75 });
-      setRecentActivitiesData([
-        {
-            id: "initial-mock-1",
-            title: "Uploaded Resume 'Initial_Mock_Resume.pdf'",
-            description: "Your resume was successfully uploaded (initial mock).",
-            date: new Date(Date.now() - 1000 * 60 * 60 * 1).toLocaleString(), // 1 hour ago
-            icon: getActivityIcon('resume_upload'),
-            type: 'resume_upload'
-        },
-        {
-            id: "initial-mock-2",
-            title: "Analyzed 'Software_Engineer_Resume.docx'",
-            description: "Resume analysis complete, 85% score (initial mock).",
-            date: new Date(Date.now() - 1000 * 60 * 60 * 3).toLocaleString(), // 3 hours ago
-            icon: getActivityIcon('resume_analysis'),
-            type: 'resume_analysis'
-        }
-      ]);
-
       try {
-        // Attempt to fetch real activities from the API
-        const response = await apiClient.get<ActivityData[]>('/api/activity/recent');
-        const fetchedActivities = response.data.map(act => ({
+        const [activityRes, uploadedRes, generatedRes] = await Promise.all([
+          apiClient.get<ActivityData[]>('/api/activity/recent'),
+          apiClient.get<{ resumes: UploadedResumeSummary[] }>('/api/resumes'),
+          apiClient.get<{ generatedResumes: GeneratedResumeSummary[] }>('/api/builder/generated')
+        ]);
+
+        const uploadedResumes = uploadedRes.data.resumes || [];
+        const generatedResumes = generatedRes.data.generatedResumes || [];
+        const analyzedScores = uploadedResumes
+          .map(resume => resume.overallScore)
+          .filter((score): score is number => typeof score === 'number');
+        const averageScore = analyzedScores.length
+          ? Math.round(analyzedScores.reduce((sum, score) => sum + score, 0) / analyzedScores.length)
+          : null;
+
+        setStatsData([
+          {
+            title: "Resume Score",
+            value: averageScore !== null ? String(averageScore) : "N/A",
+            description: analyzedScores.length ? "Average analyzed resume score" : "Analyze a resume to see score",
+            icon: <LineChart className="h-5 w-5 text-blue-500" />,
+            color: "from-blue-500 to-indigo-600"
+          },
+          {
+            title: "Uploaded Resumes",
+            value: String(uploadedResumes.length),
+            description: "Parsed resumes in your account",
+            icon: <Upload className="h-5 w-5 text-emerald-500" />,
+            color: "from-emerald-500 to-teal-600"
+          },
+          {
+            title: "Generated Resumes",
+            value: String(generatedResumes.length),
+            description: "AI-generated resumes saved",
+            icon: <FileText className="h-5 w-5 text-violet-500" />,
+            color: "from-violet-500 to-purple-600"
+          },
+          {
+            title: "Career Tools",
+            value: "4",
+            description: "Analysis, builder, matching, letters",
+            icon: <FileEdit className="h-5 w-5 text-amber-500" />,
+            color: "from-amber-500 to-orange-600"
+          },
+        ]);
+
+        setResumeStrength(averageScore !== null ? {
+          keywords: averageScore,
+          experience: averageScore,
+          skills: averageScore,
+          readability: averageScore
+        } : null);
+
+        const fetchedActivities = activityRes.data.map(act => ({
           ...act,
           date: new Date(act.date).toLocaleString(),
           icon: getActivityIcon(act.type as ActivityData['type'])
         }));
-        // If API succeeds, replace mock recent activities with real ones
-        if (fetchedActivities.length > 0) {
-            setRecentActivitiesData(fetchedActivities);
-        }
-        // If your API were to return data for other sections, you would update them here.
+        setRecentActivitiesData(fetchedActivities);
 
       } catch (error) {
-        console.error("Failed to fetch real dashboard data; displaying initial mock data:", error);
-        // The initial mock data set above will be used if the API call fails.
+        console.error("Failed to fetch dashboard data:", error);
+        setStatsData([]);
+        setRecentActivitiesData([]);
+        setResumeStrength(null);
       } finally {
-        // Crucially, set isLoading to false AFTER all data (mock or real) is processed.
         setIsLoading(false);
       }
     };
@@ -239,8 +204,10 @@ export default function DashboardHome() {
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{greeting}</h2>
           <p className="text-gray-500 mt-1">{formattedDate}</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-          <Upload className="mr-2 h-4 w-4" /> Upload New Resume
+        <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Link to="/dashboard/analyze">
+            <Upload className="mr-2 h-4 w-4" /> Upload New Resume
+          </Link>
         </Button>
       </div>
       
@@ -356,13 +323,6 @@ export default function DashboardHome() {
                 </div>
               )}
             </CardContent>
-            {recentActivitiesData.length > 0 && !isLoading && (
-              <CardFooter className="border-t bg-gray-50">
-                <Button variant="ghost" className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                  View All Activity
-                </Button>
-              </CardFooter>
-            )}
           </Card>
         </div>
         
@@ -410,8 +370,8 @@ export default function DashboardHome() {
             </CardContent>
             {!isLoading && resumeStrength && (
               <CardFooter className="border-t bg-gray-50">
-                <Button variant="ghost" className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                  View Detailed Analysis
+                <Button asChild variant="ghost" className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                  <Link to="/dashboard/analyze">View Detailed Analysis</Link>
                 </Button>
               </CardFooter>
             )}
@@ -424,50 +384,12 @@ export default function DashboardHome() {
               <CardDescription>Items on your to-do list</CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <div className="space-y-4 py-4">
-                  {Array(2).fill(0).map((_, index) => (
-                    <div key={index} className="flex items-center space-x-3 animate-pulse">
-                      <div className="h-8 w-8 rounded-full bg-gray-200"></div>
-                      <div className="flex-1 space-y-1">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : upcomingTasksData.length > 0 ? (
-                <div className="space-y-4">
-                  {upcomingTasksData.map((task, index) => (
-                    <div key={index} className="flex items-start p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                      <div className="p-2 rounded-full bg-amber-50 text-amber-600 mr-3">
-                        <Calendar size={16} />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{task.title}</h4>
-                        <p className="text-sm text-gray-600">{task.description}</p>
-                        <p className="text-xs text-amber-600 mt-1 flex items-center">
-                          <Clock size={12} className="mr-1" /> Due: {task.dueDate}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-10">
-                  <Calendar className="mx-auto h-12 w-12 text-gray-300" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No Upcoming Tasks</h3>
-                  <p className="mt-1 text-sm text-gray-500">Your to-do list is clear.</p>
-                </div>
-              )}
+              <div className="text-center py-10">
+                <Calendar className="mx-auto h-12 w-12 text-gray-300" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Tasks are not available yet</h3>
+                <p className="mt-1 text-sm text-gray-500">Use Quick Actions to continue your resume workflow.</p>
+              </div>
             </CardContent>
-            {upcomingTasksData.length > 0 && !isLoading && (
-              <CardFooter className="border-t bg-gray-50">
-                <Button variant="ghost" className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                  View All Tasks
-                </Button>
-              </CardFooter>
-            )}
           </Card>
           
           {/* Tip of the day (static, so it remains) */}

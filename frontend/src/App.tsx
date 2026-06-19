@@ -45,39 +45,15 @@ const App = () => (
           />
           <Route
             path="/analyze"
-            element={
-              <>
-                <Navbar />
-                <main className="flex-grow">
-                  <AnalyzeResume />
-                </main>
-                <Footer />
-              </>
-            }
+            element={<Navigate to="/dashboard/analyze" replace />}
           />
           <Route
             path="/builder"
-            element={
-              <>
-                <Navbar />
-                <main className="flex-grow">
-                  <ResumeBuilder />
-                </main>
-                <Footer />
-              </>
-            }
+            element={<Navigate to="/dashboard/builder" replace />}
           />
           <Route
             path="/job-match"
-            element={
-              <>
-                <Navbar />
-                <main className="flex-grow">
-                  <JobMatch />
-                </main>
-                <Footer />
-              </>
-            }
+            element={<Navigate to="/dashboard/job-match" replace />}
           />
 
           {/* Login route */}
@@ -120,9 +96,6 @@ const App = () => (
               <Route path="help" element={<HelpAndTips />} />
             </Route>
           </Route>
-
-          {/* Redirect /dashboard to /dashboard if missing trailing slash */}
-          <Route path="/dashboard" element={<Navigate to="/dashboard" replace />} />
 
           {/* 404 route */}
           <Route path="*" element={<NotFound />} />

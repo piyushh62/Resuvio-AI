@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Download, Edit, FileText, MoreHorizontal, Plus, Trash2, CircleDashed, AlertTriangle, UploadCloud, Bot } from "lucide-react";
+import { Download, Edit, FileText, MoreHorizontal, Plus, CircleDashed, AlertTriangle, UploadCloud, Bot } from "lucide-react";
 import { toast } from "sonner";
 import apiClient from '@/lib/api';
 import { format } from 'date-fns';
@@ -14,6 +14,7 @@ interface UploadedResumeSummary {
   originalFilename: string;
   uploadTimestamp: { _seconds: number, _nanoseconds: number };
   overallScore?: number;
+  analysisTimestamp?: { _seconds: number, _nanoseconds: number };
 }
 
 interface GeneratedResumeSummary {
@@ -23,6 +24,15 @@ interface GeneratedResumeSummary {
   inputTargetRole?: string;
   version: number;
 }
+
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+};
 
 // --- Skeleton Card Component ---
 const ResumeSkeletonCard = () => (
@@ -71,9 +81,10 @@ export default function MyResumes() {
           setGeneratedResumes([]);
         }
 
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching resumes:", err);
-        const message = err.response?.data?.message || err.message || "Failed to load your resumes.";
+        const apiError = err as ApiErrorLike;
+        const message = apiError.response?.data?.message || apiError.message || "Failed to load your resumes.";
         setError(message);
         toast.error(`Error loading resumes: ${message}`);
       } finally {
@@ -84,19 +95,14 @@ export default function MyResumes() {
     fetchData();
   }, []);
 
-  const handleDelete = (id: string, type: 'uploaded' | 'generated') => {
-    toast.warning(`Deleting ${type} resume ${id} (Not Implemented)`);
-    console.log(`Request to delete ${type} resume with ID: ${id}`);
-  };
-
   const handleEdit = (id: string, type: 'uploaded' | 'generated') => {
-    toast.info(`Editing ${type} resume ${id} (Not Implemented)`);
+    toast.info(`Saved ${type} resume editing is not available yet.`);
     console.log(`Request to edit ${type} resume with ID: ${id}`);
   };
 
   const handleDownload = (id: string, type: 'uploaded' | 'generated') => {
     if (type === 'generated' && apiClient.defaults.baseURL) {
-      const downloadUrl = `${apiClient.defaults.baseURL}/builder/download/${id}`;
+      const downloadUrl = `${apiClient.defaults.baseURL}/api/builder/download/${id}`;
       window.open(downloadUrl, '_blank');
       toast.success(`Initiating PDF download for generated resume ${id}`);
     } else {
@@ -105,13 +111,9 @@ export default function MyResumes() {
     console.log(`Request to download ${type} resume with ID: ${id}`);
   };
 
-  const handleClone = (id: string, type: 'uploaded' | 'generated') => {
-    toast.info(`Cloning ${type} resume ${id} (Not Implemented)`);
-    console.log(`Request to clone ${type} resume with ID: ${id}`);
-  };
-
   const handleViewAnalysis = (id: string) => {
-    navigate(`/analyze/${id}`);
+    toast.info("Detailed saved analysis view is not available yet. Opening resume analysis tool.");
+    navigate('/dashboard/analyze');
   };
 
   const formatTimestamp = (timestamp: { _seconds: number, _nanoseconds: number }): string => {
@@ -136,7 +138,7 @@ export default function MyResumes() {
             <p className="text-muted-foreground">Manage your uploaded and generated resumes</p>
           </div>
           <Button asChild disabled>
-            <a href="/builder">
+            <a href="/dashboard/builder">
               <Plus className="mr-2 h-4 w-4" />
               Create New Resume
             </a>
@@ -181,11 +183,9 @@ export default function MyResumes() {
           <h2 className="text-3xl font-bold mb-2">My Resumes</h2>
           <p className="text-muted-foreground">Manage your uploaded and generated resumes</p>
         </div>
-        <Button asChild>
-          <a href="/builder">
+        <Button onClick={() => navigate('/dashboard/builder')}>
             <Plus className="mr-2 h-4 w-4" />
             Create New Resume
-          </a>
         </Button>
       </div>
 
@@ -211,12 +211,6 @@ export default function MyResumes() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleDownload(resume.id, 'uploaded')}>
                           <Download className="mr-2 h-4 w-4" /> Download Original
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(resume.id, 'uploaded')}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -277,15 +271,6 @@ export default function MyResumes() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleDownload(resume.id, 'generated')}>
                           <Download className="mr-2 h-4 w-4" /> Download PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleClone(resume.id, 'generated')}>
-                          <Plus className="mr-2 h-4 w-4" /> Clone Input
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(resume.id, 'generated')}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

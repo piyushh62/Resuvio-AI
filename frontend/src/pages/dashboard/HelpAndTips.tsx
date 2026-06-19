@@ -12,6 +12,15 @@ interface Tip {
   content: string;
 }
 
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+};
+
 // Video tutorial data with actual YouTube content
 const videoTutorials = [
   {
@@ -77,9 +86,10 @@ export default function HelpAndTips() {
           console.error("Unexpected tips API response format:", response.data);
           setTipsError("Failed to load tips due to unexpected format.");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error fetching tips:", error);
-        const message = error.response?.data?.message || error.message || "An unknown error occurred while fetching tips.";
+        const apiError = error as ApiErrorLike;
+        const message = apiError.response?.data?.message || apiError.message || "An unknown error occurred while fetching tips.";
         setTipsError(message);
       } finally {
         setIsLoadingTips(false);

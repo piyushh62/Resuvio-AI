@@ -22,8 +22,18 @@ interface ResumeAnalysis {
   };
   suggestions: string[];
   strengths: string[];
-  analysisTimestamp?: any; // Added timestamp based on backend code
+  analysisTimestamp?: unknown; // Added timestamp based on backend code
 }
+
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  request?: unknown;
+  message?: string;
+};
 
 // Type for the actual API response structure for analysis endpoint
 interface AnalyzeApiResponse {
@@ -124,12 +134,13 @@ const AnalyzeResume = () => {
         console.error("Unexpected upload response:", response);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Upload Error:", error);
+      const apiError = error as ApiErrorLike;
       let errorMessage = "Error uploading resume. Please try again.";
-      if (error.response) {
-        errorMessage = error.response.data?.message || errorMessage;
-      } else if (error.request) {
+      if (apiError.response) {
+        errorMessage = apiError.response.data?.message || errorMessage;
+      } else if (apiError.request) {
         errorMessage = "Network error. Could not reach the server.";
       }
       toast.error(errorMessage);
@@ -162,12 +173,13 @@ const AnalyzeResume = () => {
         console.error("Unexpected analysis response:", response);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Analysis Error:", error);
+      const apiError = error as ApiErrorLike;
       let errorMessage = "Failed to analyze resume. Please try again.";
-      if (error.response) {
-        errorMessage = error.response.data?.message || errorMessage;
-      } else if (error.request) {
+      if (apiError.response) {
+        errorMessage = apiError.response.data?.message || errorMessage;
+      } else if (apiError.request) {
         errorMessage = "Network error. Could not reach the server.";
       }
       toast.error(errorMessage);

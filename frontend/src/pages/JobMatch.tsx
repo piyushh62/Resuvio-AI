@@ -17,6 +17,16 @@ interface MatchAnalysisResult {
   suggestions: string[];
 }
 
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  request?: unknown;
+  message?: string;
+};
+
 const JobMatchPage = () => {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isResumeDragActive, setIsResumeDragActive] = useState(false);
@@ -105,12 +115,13 @@ const JobMatchPage = () => {
         console.error("Unexpected match response:", response);
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Match Error:", error);
+      const apiError = error as ApiErrorLike;
       let errorMessage = "Error analyzing job match. Please try again.";
-      if (error.response) {
-        errorMessage = error.response.data?.message || errorMessage;
-      } else if (error.request) {
+      if (apiError.response) {
+        errorMessage = apiError.response.data?.message || errorMessage;
+      } else if (apiError.request) {
         errorMessage = "Network error. Could not reach the server.";
       }
       toast.error(errorMessage);

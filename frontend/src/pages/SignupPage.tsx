@@ -9,6 +9,14 @@ import apiClient from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Loader } from '@/components/ui/loader';
 
+type ApiErrorLike = {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+};
+
 const SignupPage: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -56,10 +64,11 @@ const SignupPage: React.FC = () => {
 
             navigate('/login');
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Signup Error:", error);
-            if (error.response && error.response.data && error.response.data.message) {
-                toast.error(`Signup failed: ${error.response.data.message}`);
+            const apiError = error as ApiErrorLike;
+            if (apiError.response?.data?.message) {
+                toast.error(`Signup failed: ${apiError.response.data.message}`);
             } else {
                 toast.error("Signup failed. Please try again.");
             }

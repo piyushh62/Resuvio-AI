@@ -10,6 +10,10 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth } from '@/context/AuthContext';
 import { Loader } from '@/components/ui/loader';
 
+type FirebaseAuthErrorLike = {
+    code?: string;
+};
+
 const LoginPage: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -45,9 +49,10 @@ const LoginPage: React.FC = () => {
             toast.success("Login successful! Redirecting...");
             navigate('/dashboard');
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Login Error:", error);
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
+            const authError = error as FirebaseAuthErrorLike;
+            if (authError.code === 'auth/user-not-found' || authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential' || authError.code === 'auth/invalid-email') {
                 toast.error("Invalid email or password.");
             } else {
                 toast.error("Login failed. Please try again.");
