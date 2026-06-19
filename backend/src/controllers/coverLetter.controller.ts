@@ -16,7 +16,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 // Initialize Google Generative AI
 // Ensure GEMINI_API_KEY is set in your environment variables
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use the same model as resume analysis
+const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
 
 interface CustomRequest extends Request {
     user?: admin.auth.DecodedIdToken;

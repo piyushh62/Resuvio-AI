@@ -35,7 +35,7 @@ interface CustomRequest extends Request {
 // Initialize Google Generative AI 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Old model
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use current recommended model
+const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
 
 // Placeholder for uploadResume function
 export const uploadResume = async (req: CustomRequest, res: Response): Promise<void> => {
