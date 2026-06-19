@@ -243,7 +243,6 @@ export const getUploadedResumes = async (req: CustomRequest, res: Response): Pro
 
         const resumesSnapshot = await db.collection('resumes')
             .where('userId', '==', userId)
-            .orderBy('uploadTimestamp', 'desc') // Order by newest first
             .get();
 
         if (resumesSnapshot.empty) {
@@ -262,7 +261,7 @@ export const getUploadedResumes = async (req: CustomRequest, res: Response): Pro
                 overallScore: data.analysis?.overallScore, // Include score if available
                 analysisTimestamp: data.analysis?.analysisTimestamp
             };
-        });
+        }).sort((a, b) => (b.uploadTimestamp?.seconds || 0) - (a.uploadTimestamp?.seconds || 0));
 
         console.log(`[getResumes]: Found ${resumes.length} uploaded resumes for user ${userId}`);
         res.status(200).json({ resumes });

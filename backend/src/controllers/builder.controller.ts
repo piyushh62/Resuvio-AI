@@ -245,7 +245,6 @@ export const getGeneratedResumes = async (req: CustomRequest, res: Response): Pr
 
         const resumesSnapshot = await db.collection('generatedResumes')
             .where('userId', '==', userId)
-            .orderBy('createdAt', 'desc') // Order by newest first
             .get();
 
         if (resumesSnapshot.empty) {
@@ -266,7 +265,7 @@ export const getGeneratedResumes = async (req: CustomRequest, res: Response): Pr
                 version: data.version,
                 // Avoid sending the full inputData or generatedText in the list view
             };
-        });
+        }).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
         console.log(`[getGenerated]: Found ${generatedResumes.length} generated resumes for user ${userId}`);
         res.status(200).json({ generatedResumes });
