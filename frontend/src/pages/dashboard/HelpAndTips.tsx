@@ -120,23 +120,30 @@ export default function HelpAndTips() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold mb-2">Help & Tips</h2>
-        <p className="text-muted-foreground">Learn how to create an effective resume and improve your job search</p>
+      <div className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent font-heading tracking-tight">Help & Tips</h2>
+          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">Learn how to create an effective resume and improve your job search</p>
+        </div>
       </div>
 
-      <Tabs defaultValue="tips">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="tips">Resume Tips</TabsTrigger>
-          <TabsTrigger value="faqs">FAQs</TabsTrigger>
-          <TabsTrigger value="videos">Tutorials</TabsTrigger>
+      <Tabs defaultValue="tips" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-3 bg-secondary/50 p-1 rounded-xl">
+          <TabsTrigger value="tips" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg py-2.5 font-medium transition-all">Resume Tips</TabsTrigger>
+          <TabsTrigger value="faqs" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg py-2.5 font-medium transition-all">FAQs</TabsTrigger>
+          <TabsTrigger value="videos" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-lg py-2.5 font-medium transition-all">Tutorials</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tips" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resume Writing Tips</CardTitle>
-              <CardDescription>
+        <TabsContent value="tips" className="mt-8">
+          <Card className="bg-card/50 backdrop-blur-sm border-border/40 shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="bg-secondary/30 border-b border-border/40 pb-5">
+              <CardTitle className="text-xl font-heading text-foreground flex items-center">
+                <div className="p-1.5 rounded-md bg-violet-500/10 text-violet-500 mr-3">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                Resume Writing Tips
+              </CardTitle>
+              <CardDescription className="text-base text-muted-foreground mt-2">
                 General guidelines and best practices to create an effective resume
               </CardDescription>
             </CardHeader>
@@ -147,19 +154,21 @@ export default function HelpAndTips() {
                   <span className="ml-3 text-muted-foreground">Loading tips...</span>
                 </div>
               ) : tipsError ? (
-                <div className="flex flex-col items-center justify-center py-12 text-red-600">
+                <div className="flex flex-col items-center justify-center py-12 text-destructive">
                   <AlertTriangle className="h-8 w-8 mb-2" />
                   <p className="font-medium">Failed to load tips</p>
-                  <p className="text-sm text-red-500">Error: {tipsError}</p>
+                  <p className="text-sm text-destructive">Error: {tipsError}</p>
                 </div>
               ) : tips.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {tips.map((tip) => (
-                    <div key={tip.id} className="flex gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-theme-emerald shrink-0 mt-0.5" />
+                    <div key={tip.id} className="flex gap-4 p-4 rounded-xl border border-border/40 bg-background/50 hover:border-violet-500/30 transition-colors">
+                      <div className="mt-0.5">
+                        <CheckCircle2 className="h-5 w-5 text-violet-500" />
+                      </div>
                       <div>
-                        <h3 className="font-medium">{tip.category || 'General Tip'}</h3>
-                        <p className="text-muted-foreground">{tip.content}</p>
+                        <h3 className="text-base font-semibold text-foreground mb-1 font-heading">{tip.category || 'General Tip'}</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{tip.content}</p>
                       </div>
                     </div>
                   ))}
@@ -173,11 +182,16 @@ export default function HelpAndTips() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="faqs" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Frequently Asked Questions</CardTitle>
-              <CardDescription>
+        <TabsContent value="faqs" className="mt-8">
+          <Card className="bg-card/50 backdrop-blur-sm border-border/40 shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="bg-secondary/30 border-b border-border/40 pb-5">
+              <CardTitle className="text-xl font-heading text-foreground flex items-center">
+                <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-500 mr-3">
+                  <HelpCircle className="h-5 w-5" />
+                </div>
+                Frequently Asked Questions
+              </CardTitle>
+              <CardDescription className="text-base text-muted-foreground mt-2">
                 Common questions about resume writing and job applications
               </CardDescription>
             </CardHeader>
@@ -187,11 +201,11 @@ export default function HelpAndTips() {
                   <AccordionItem key={index} value={`item-${index}`}>
                     <AccordionTrigger className="text-left">
                       <div className="flex items-center gap-2">
-                        <HelpCircle className="h-4 w-4 text-theme-blue" />
-                        {item.question}
+                        <HelpCircle className="h-4 w-4 text-primary" />
+                        <span className="text-foreground">{item.question}</span>
                       </div>
                     </AccordionTrigger>
-                    <AccordionContent className="pl-6">
+                    <AccordionContent className="pl-6 text-muted-foreground">
                       {item.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -201,11 +215,16 @@ export default function HelpAndTips() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="videos" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Video Tutorials</CardTitle>
-              <CardDescription>
+        <TabsContent value="videos" className="mt-8">
+          <Card className="bg-card/50 backdrop-blur-sm border-border/40 shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="bg-secondary/30 border-b border-border/40 pb-5">
+              <CardTitle className="text-xl font-heading text-foreground flex items-center">
+                <div className="p-1.5 rounded-md bg-pink-500/10 text-pink-500 mr-3">
+                  <PlayCircle className="h-5 w-5" />
+                </div>
+                Video Tutorials
+              </CardTitle>
+              <CardDescription className="text-base text-muted-foreground mt-2">
                 Watch these videos to learn more about effective resume writing
               </CardDescription>
             </CardHeader>
@@ -213,10 +232,10 @@ export default function HelpAndTips() {
               {selectedVideo ? (
                 <div className="space-y-4">
                   <YouTubeEmbed embedId={selectedVideo} />
-                  <div className="flex justify-between mt-4">
+                  <div className="flex justify-between mt-6">
                     <button 
                       onClick={() => setSelectedVideo(null)}
-                      className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 transition-colors rounded-md flex items-center"
+                      className="px-5 py-2.5 text-sm bg-secondary/50 hover:bg-secondary/80 border border-border/50 transition-colors rounded-xl flex items-center text-foreground font-medium"
                     >
                       ← Back to videos
                     </button>
@@ -224,9 +243,9 @@ export default function HelpAndTips() {
                       href={`https://www.youtube.com/watch?v=${selectedVideo}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="px-4 py-2 text-sm bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors rounded-md flex items-center"
+                      className="px-5 py-2.5 text-sm bg-violet-500/10 text-violet-600 border border-violet-500/20 hover:bg-violet-500/20 transition-colors rounded-xl flex items-center font-medium"
                     >
-                      Watch on YouTube <ExternalLink className="ml-1 h-3 w-3" />
+                      Watch on YouTube <ExternalLink className="ml-2 h-4 w-4" />
                     </a>
                   </div>
                 </div>
@@ -235,22 +254,22 @@ export default function HelpAndTips() {
                   {videoTutorials.map((video) => (
                     <div 
                       key={video.id} 
-                      className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-300"
+                      className="border border-border/40 rounded-2xl overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-background/50 group"
                       onClick={() => setSelectedVideo(video.embedId)}
                     >
-                      <div className="aspect-video bg-gray-100 relative group">
+                      <div className="aspect-video bg-secondary/50 relative overflow-hidden">
                         <img 
                           src={video.thumbnail} 
                           alt={`Thumbnail for ${video.title}`} 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity duration-300">
-                          <PlayCircle className="h-16 w-16 text-white opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors duration-300">
+                          <PlayCircle className="h-16 w-16 text-white opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300 drop-shadow-md" />
                         </div>
                       </div>
-                      <div className="p-4">
-                        <h3 className="font-medium">{video.title}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
+                      <div className="p-5">
+                        <h3 className="font-semibold text-foreground font-heading text-lg group-hover:text-violet-600 transition-colors">{video.title}</h3>
+                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                           {video.description}
                         </p>
                       </div>

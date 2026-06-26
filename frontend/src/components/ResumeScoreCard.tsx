@@ -18,7 +18,7 @@ export function ResumeScoreCard({ category, score, color }: ScoreProps) {
         <CardTitle className="text-lg font-medium">{category}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center">
-        <div className="relative w-28 h-28 flex items-center justify-center">
+        <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center">
           {/* Background circle */}
           <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
             <circle
@@ -46,7 +46,7 @@ export function ResumeScoreCard({ category, score, color }: ScoreProps) {
           
           {/* Score text in the center */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-2xl font-bold" style={{ color }}>
+            <span className="text-xl sm:text-2xl font-bold" style={{ color }}>
               {score}%
             </span>
           </div>

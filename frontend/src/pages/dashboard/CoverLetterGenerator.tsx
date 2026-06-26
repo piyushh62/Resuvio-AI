@@ -51,6 +51,14 @@ const templates = [
   { id: "creative", name: "Creative", description: "Unique and attention-grabbing" }
 ];
 
+// Tone options for cover letters
+const tones = [
+  { id: "professional", label: "Professional", icon: "💼", description: "Balanced and business-appropriate" },
+  { id: "friendly", label: "Friendly", icon: "😊", description: "Warm and approachable" },
+  { id: "formal", label: "Formal", icon: "🎩", description: "Highly structured and traditional" },
+  { id: "enthusiastic", label: "Enthusiastic", icon: "🚀", description: "Energetic and passionate" }
+];
+
 export default function CoverLetterGenerator() {
   const [resumes, setResumes] = useState([]);
   const [selectedResume, setSelectedResume] = useState("");
@@ -58,6 +66,7 @@ export default function CoverLetterGenerator() {
   const [companyName, setCompanyName] = useState("");
   const [roleName, setRoleName] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("professional");
+  const [selectedTone, setSelectedTone] = useState("professional");
   const [isGenerating, setIsGenerating] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
   const [activeTab, setActiveTab] = useState("create");
@@ -134,7 +143,8 @@ export default function CoverLetterGenerator() {
         jobDescription,
         companyName,
         roleName,
-        selectedTemplate
+        selectedTemplate,
+        tone: selectedTone
       };
       
       // Call the backend API
@@ -184,24 +194,24 @@ export default function CoverLetterGenerator() {
       <motion.div variants={fadeIn}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Cover Letter Generator</h2>
-            <p className="text-muted-foreground">Create customized cover letters for your job applications with AI assistance</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent font-heading tracking-tight">Cover Letter Generator</h2>
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">Create customized cover letters for your job applications with AI assistance</p>
           </div>
           
-          <Badge variant="outline" className="px-3 py-1 text-sm font-medium border-blue-200 bg-blue-50 text-blue-700 self-start md:self-center">
-            <Sparkles className="h-3.5 w-3.5 mr-1 text-blue-500" />
+          <Badge variant="outline" className="px-4 py-1.5 text-sm font-medium border-violet-500/20 bg-violet-500/10 text-violet-600 self-start md:self-center">
+            <Sparkles className="h-4 w-4 mr-1.5 text-violet-500" />
             AI Powered
           </Badge>
         </div>
       </motion.div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8">
-          <TabsTrigger value="create" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
+        <TabsList className="grid w-full grid-cols-2 mb-8 bg-secondary/50 p-1">
+          <TabsTrigger value="create" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md py-2.5">
             <FileEdit className="h-4 w-4 mr-2" />
             Create Letter
           </TabsTrigger>
-          <TabsTrigger value="view" disabled={!coverLetter} className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700">
+          <TabsTrigger value="view" disabled={!coverLetter} className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md py-2.5">
             <FileText className="h-4 w-4 mr-2" />
             View & Edit
           </TabsTrigger>
@@ -209,25 +219,27 @@ export default function CoverLetterGenerator() {
 
         <TabsContent value="create">
           <motion.div 
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8"
             variants={fadeIn}
           >
-            <Card className="border-gray-200 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b">
-                <CardTitle className="flex items-center text-gray-800">
-                  <User className="h-5 w-5 mr-2 text-blue-500" />
+            <Card className="border-border/40 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all group">
+              <CardHeader className="bg-secondary/30 border-b border-border/40">
+                <CardTitle className="flex items-center text-foreground font-heading">
+                  <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-500 mr-3">
+                    <User className="h-5 w-5" />
+                  </div>
                   Your Information
                 </CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardDescription className="text-muted-foreground text-base mt-1">
                   Select your resume and provide details about the job
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-8">
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="resume" className="text-gray-700">Select Resume</Label>
+                    <Label htmlFor="resume" className="text-foreground font-medium">Select Resume</Label>
                     <Select value={selectedResume} onValueChange={setSelectedResume}>
-                      <SelectTrigger id="resume" className="border-gray-300 focus:border-blue-400">
+                      <SelectTrigger id="resume" className="border-border/50 bg-background/50 focus:ring-1 focus:ring-violet-500 h-11">
                         <SelectValue placeholder="Select a resume" />
                       </SelectTrigger>
                       <SelectContent>
@@ -246,110 +258,134 @@ export default function CoverLetterGenerator() {
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="company-name" className="text-gray-700">Company Name</Label>
+                      <Label htmlFor="company-name" className="text-foreground font-medium">Company Name</Label>
                       <Input 
                         id="company-name"
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
                         placeholder="e.g., Acme Corp"
-                        className="border-gray-300 focus:border-blue-400"
+                        className="border-border/50 bg-background/50 focus:ring-1 focus:ring-violet-500 h-11"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="role-name" className="text-gray-700">Position/Role</Label>
+                      <Label htmlFor="role-name" className="text-foreground font-medium">Position/Role</Label>
                       <Input 
                         id="role-name"
                         value={roleName}
                         onChange={(e) => setRoleName(e.target.value)}
                         placeholder="e.g., Senior Developer"
-                        className="border-gray-300 focus:border-blue-400"
+                        className="border-border/50 bg-background/50 focus:ring-1 focus:ring-violet-500 h-11"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="job-description" className="text-gray-700">Job Description</Label>
+                    <Label htmlFor="job-description" className="text-foreground font-medium">Job Description</Label>
                     <Textarea
                       id="job-description"
                       value={jobDescription}
                       onChange={(e) => setJobDescription(e.target.value)}
                       placeholder="Paste the job description here... The more details you provide, the better the result will be."
                       rows={8}
-                      className="resize-none border-gray-300 focus:border-blue-400"
+                      className="resize-none border-border/50 bg-background/50 focus:ring-1 focus:ring-violet-500 p-4"
                     />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-gray-200 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50 border-b">
-                <CardTitle className="flex items-center text-gray-800">
-                  <Wand2 className="h-5 w-5 mr-2 text-blue-500" />
+            <Card className="border-border/40 bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all group">
+              <CardHeader className="bg-secondary/30 border-b border-border/40">
+                <CardTitle className="flex items-center text-foreground font-heading">
+                  <div className="p-1.5 rounded-md bg-violet-500/10 text-violet-500 mr-3">
+                    <Wand2 className="h-5 w-5" />
+                  </div>
                   Generation Options
                 </CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardDescription className="text-muted-foreground text-base mt-1">
                   Choose your preferences for the cover letter style
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-8">
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label className="text-gray-700">Select Template Style</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                  <div className="space-y-3">
+                    <Label className="text-foreground font-medium">Select Template Style</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {templates.map(template => (
                         <div 
                           key={template.id}
                           onClick={() => setSelectedTemplate(template.id)}
                           className={`
-                            p-4 rounded-lg border-2 cursor-pointer transition-all
+                            p-4 rounded-xl border-2 cursor-pointer transition-all duration-300
                             ${selectedTemplate === template.id 
-                              ? 'border-blue-500 bg-blue-50/50' 
-                              : 'border-gray-200 hover:border-gray-300'}
+                              ? 'border-violet-500 bg-violet-500/5' 
+                              : 'border-border/50 bg-background/50 hover:border-violet-500/50 hover:bg-secondary/50'}
                           `}
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <span className="font-medium">{template.name}</span>
+                            <span className="font-semibold text-foreground">{template.name}</span>
                             {selectedTemplate === template.id && (
-                              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+                              <CheckCircle2 className="h-5 w-5 text-violet-500" />
                             )}
                           </div>
-                          <p className="text-xs text-gray-500">{template.description}</p>
+                          <p className="text-sm text-muted-foreground">{template.description}</p>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="pt-4">
+                  <div className="space-y-3">
+                    <Label className="text-foreground font-medium">Letter Tone</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {tones.map(tone => (
+                        <div
+                          key={tone.id}
+                          onClick={() => setSelectedTone(tone.id)}
+                          className={`
+                            flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 text-center h-full
+                            ${selectedTone === tone.id
+                              ? 'border-violet-500 bg-violet-500/5'
+                              : 'border-border/50 bg-background/50 hover:border-violet-500/50 hover:bg-secondary/50'}
+                          `}
+                        >
+                          <span className="text-2xl mb-2">{tone.icon}</span>
+                          <span className="text-sm font-semibold text-foreground">{tone.label}</span>
+                          <span className="text-xs text-muted-foreground mt-1 leading-relaxed hidden sm:block">{tone.description}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-6">
                     <Button 
                       onClick={handleGenerate} 
                       disabled={isGenerating || !selectedResume || !jobDescription}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                      className="w-full h-12 bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white text-base font-semibold rounded-xl transition-all duration-300 hover:scale-[1.01]"
                     >
                       {isGenerating ? (
                         <>
-                          <CircleDashed className="mr-2 h-4 w-4 animate-spin" />
+                          <CircleDashed className="mr-3 h-5 w-5 animate-spin" />
                           Generating...
                         </>
                       ) : (
                         <>
-                          <Sparkles className="mr-2 h-4 w-4" />
+                          <Sparkles className="mr-3 h-5 w-5" />
                           Generate Cover Letter
                         </>
                       )}
                     </Button>
                     
                     {isGenerating && (
-                      <div className="mt-4">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <div className="mt-5 bg-secondary/30 p-4 rounded-xl border border-border/50">
+                        <div className="flex justify-between text-sm text-foreground font-medium mb-2">
                           <span>Generating your cover letter...</span>
                           <span>{generationProgress}%</span>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
+                        <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
                           <div 
-                            className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300" 
+                            className="bg-gradient-to-r from-violet-500 to-blue-500 h-2 rounded-full transition-all duration-300" 
                             style={{ width: `${generationProgress}%` }}
                           ></div>
                         </div>
@@ -357,17 +393,17 @@ export default function CoverLetterGenerator() {
                     )}
                     
                     {error && (
-                      <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm flex items-start">
-                        <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                        <span>{error}</span>
+                      <div className="mt-5 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm flex items-start">
+                        <AlertTriangle className="h-5 w-5 mr-3 flex-shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{error}</span>
                       </div>
                     )}
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-gray-50 border-t px-6 py-4">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Briefcase className="h-4 w-4 text-blue-500 mr-2" />
+              <CardFooter className="bg-secondary/30 border-t border-border/40 px-6 py-4">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Briefcase className="h-4 w-4 text-violet-500 mr-2.5" />
                   <span>Personalized to match the job requirements and your qualifications</span>
                 </div>
               </CardFooter>
@@ -381,71 +417,71 @@ export default function CoverLetterGenerator() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="border-gray-200 shadow-lg">
-              <CardHeader className={`border-b ${editorMode ? 'bg-amber-50' : 'bg-gradient-to-r from-green-50 to-emerald-50'}`}>
+            <Card className="border-border/40 bg-card/50 backdrop-blur-sm shadow-md transition-all overflow-hidden group">
+              <CardHeader className={`border-b border-border/40 ${editorMode ? 'bg-secondary/50' : 'bg-gradient-to-r from-violet-500/5 to-blue-500/5'}`}>
                 <div className="flex justify-between items-center">
-                  <CardTitle className="flex items-center text-gray-800">
-                    <FileText className={`h-5 w-5 mr-2 ${editorMode ? 'text-amber-500' : 'text-green-500'}`} />
+                  <CardTitle className="flex items-center text-foreground font-heading">
+                    <FileText className={`h-5 w-5 mr-3 ${editorMode ? 'text-blue-500' : 'text-violet-500'}`} />
                     {editorMode ? 'Edit Your Cover Letter' : 'Your Generated Cover Letter'}
                   </CardTitle>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setEditorMode(!editorMode)}
-                    className={`h-8 ${editorMode ? 'text-amber-600' : 'text-green-600'}`}
+                    className={`h-9 px-4 rounded-lg font-medium transition-colors ${editorMode ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 hover:text-blue-700' : 'bg-violet-500/10 text-violet-600 hover:bg-violet-500/20 hover:text-violet-700'}`}
                   >
                     {editorMode ? (
                       <>
-                        <CheckCircle2 className="h-4 w-4 mr-1" /> Done Editing
+                        <CheckCircle2 className="h-4 w-4 mr-2" /> Done Editing
                       </>
                     ) : (
                       <>
-                        <Edit3 className="h-4 w-4 mr-1" /> Edit
+                        <Edit3 className="h-4 w-4 mr-2" /> Edit Letter
                       </>
                     )}
                   </Button>
                 </div>
-                <CardDescription className="text-gray-600">
+                <CardDescription className="text-muted-foreground mt-2 text-base">
                   {editorMode 
                     ? 'Make any necessary adjustments to your cover letter'
                     : `Cover letter for ${companyName || '[Company Name]'} - ${roleName || '[Position]'}`}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
+              <CardContent className="pt-8">
+                <div className="space-y-6">
                   <Textarea
                     value={coverLetter}
                     onChange={(e) => setCoverLetter(e.target.value)}
-                    rows={15}
+                    rows={18}
                     className={`
-                      resize-none font-serif text-base leading-relaxed p-6
+                      resize-none text-base leading-relaxed p-6 rounded-xl transition-all duration-300
                       ${editorMode 
-                        ? 'border-amber-300 focus:border-amber-400 bg-white' 
-                        : 'border-gray-200 bg-gray-50 focus:bg-white'}
+                        ? 'border-blue-500/50 focus:border-blue-500 bg-background focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'border-border/40 bg-secondary/30 focus:bg-background'}
                     `}
                     readOnly={!editorMode}
                   />
                   
-                  <div className="flex flex-wrap gap-4 justify-end">
+                  <div className="flex flex-wrap gap-3 sm:gap-4 justify-end">
                     <Button 
                       variant="outline" 
                       onClick={handleCopy}
-                      className="border-gray-300 hover:bg-gray-50 text-gray-700"
+                      className="border-border/50 hover:bg-secondary/50 h-11 px-5 rounded-lg font-medium transition-colors"
                     >
                       <Copy className="mr-2 h-4 w-4" />
                       Copy to Clipboard
                     </Button>
                     <Button 
                       onClick={handleDownload}
-                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+                      className="bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white h-11 px-5 rounded-lg font-medium transition-all"
                     >
                       <Download className="mr-2 h-4 w-4" />
-                      Download as Text
+                      Download text
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => setActiveTab("create")}
-                      className="border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700"
+                      className="border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 h-11 px-5 rounded-lg font-medium transition-colors"
                     >
                       <ArrowRight className="mr-2 h-4 w-4" />
                       Create Another
@@ -453,8 +489,9 @@ export default function CoverLetterGenerator() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-gray-50 border-t px-6 py-4">
-                <div className="text-sm text-gray-500 italic">
+              <CardFooter className="bg-secondary/30 border-t border-border/40 px-6 py-4">
+                <div className="text-sm text-muted-foreground italic flex items-center">
+                  <Sparkles className="h-4 w-4 mr-2 text-violet-500" />
                   Pro tip: Customize the letter to reflect your unique voice and personality before sending.
                 </div>
               </CardFooter>

@@ -20,22 +20,22 @@ export function SignInPromptModal({ isOpen, onClose }: SignInPromptModalProps) {
 
   const handleRegisterClick = () => {
     onClose();
-    navigate('/register');
+    navigate('/signup');
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="relative bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full mx-4 transform transition-all duration-300 scale-100 opacity-100">
+      <div className="relative bg-white p-5 sm:p-8 rounded-lg shadow-2xl max-w-sm w-full mx-4 transform transition-all duration-300 scale-100 opacity-100">
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-3 right-3 text-slate-500 hover:bg-slate-100"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 text-slate-500 hover:bg-slate-100"
           onClick={onClose}
         >
-          <X size={20} />
+          <X size={18} className="sm:size-[20px]" />
         </Button>
-        <h2 className="text-2xl font-bold text-slate-800 mb-4">Sign In Required</h2>
-        <p className="text-slate-600 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-3 sm:mb-4">Sign In Required</h2>
+        <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">
           To access this feature, please sign in or create an account. Resume Analyzer is available without signing in.
         </p>
         <div className="flex flex-col space-y-3">

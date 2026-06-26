@@ -20,9 +20,10 @@ export function DashboardLayout() {
 
   return (
     <SidebarProvider defaultOpen={false}>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-background selection:bg-primary/20 selection:text-primary">
         <DashboardSidebar />
-        <SidebarInset className="flex flex-col">
+        <SidebarInset className="flex flex-col bg-muted/10 relative">
+          <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none" />
           <TopNav />
           <div className="flex-grow p-3 sm:p-4 md:p-6">
             <Outlet />

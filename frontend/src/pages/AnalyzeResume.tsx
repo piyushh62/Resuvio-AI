@@ -22,7 +22,7 @@ interface ResumeAnalysis {
   };
   suggestions: string[];
   strengths: string[];
-  analysisTimestamp?: unknown; // Added timestamp based on backend code
+  analysisTimestamp?: number | string | Date;
 }
 
 type ApiErrorLike = {
@@ -204,67 +204,69 @@ const AnalyzeResume = () => {
   };
 
   return (
-    <div className="bg-gradient-to-b from-slate-50 to-white min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 py-12">
+    <div className="bg-background min-h-screen">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-12">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">AI Resume Analysis</h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <div className="text-center mb-8 sm:mb-10 md:mb-14">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-foreground font-heading tracking-tight">AI Resume Analysis</h1>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2 leading-relaxed">
               Upload your resume and get AI-powered insights to make it stand out to employers and applicant tracking systems
             </p>
           </div>
 
           {/* Progress indicators */}
-          <div className="mb-10">
+          <div className="mb-6 sm:mb-8 md:mb-10">
             <div className="flex items-center justify-center max-w-2xl mx-auto">
               <div className={`flex flex-col items-center ${analysisResult ? 'opacity-50' : 'opacity-100'}`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${file || uploadedResumeId ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-500'}`}>
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${file || uploadedResumeId ? 'bg-primary text-primary-foreground' : 'bg-secondary text-primary'}`}>
                   <Upload size={18} />
                 </div>
-                <span className="mt-2 text-sm font-medium">Upload</span>
+                <span className="mt-1 sm:mt-2 text-xs sm:text-sm font-medium text-foreground">Upload</span>
               </div>
-              <div className={`w-16 h-0.5 ${uploadedResumeId || analysisResult ? 'bg-blue-500' : 'bg-gray-200'} mx-2`} />
+              <div className={`w-8 sm:w-12 md:w-16 h-0.5 ${uploadedResumeId || analysisResult ? 'bg-primary' : 'bg-border'} mx-1 sm:mx-2`} />
               <div className={`flex flex-col items-center ${analysisResult ? 'opacity-50' : 'opacity-100'}`}>
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${uploadedResumeId && !analysisResult ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-500'}`}>
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${uploadedResumeId && !analysisResult ? 'bg-primary text-primary-foreground' : 'bg-secondary text-primary'}`}>
                   <BarChart4 size={18} />
                 </div>
-                <span className="mt-2 text-sm font-medium">Analyze</span>
+                <span className="mt-1 sm:mt-2 text-xs sm:text-sm font-medium text-foreground">Analyze</span>
               </div>
-              <div className={`w-16 h-0.5 ${analysisResult ? 'bg-blue-500' : 'bg-gray-200'} mx-2`} />
+              <div className={`w-8 sm:w-12 md:w-16 h-0.5 ${analysisResult ? 'bg-primary' : 'bg-border'} mx-1 sm:mx-2`} />
               <div className="flex flex-col items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${analysisResult ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-500'}`}>
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${analysisResult ? 'bg-primary text-primary-foreground' : 'bg-secondary text-primary'}`}>
                   <CheckCircle2 size={18} />
                 </div>
-                <span className="mt-2 text-sm font-medium">Results</span>
+                <span className="mt-1 sm:mt-2 text-xs sm:text-sm font-medium text-foreground">Results</span>
               </div>
             </div>
           </div>
 
           {/* Step 1: Upload Form */}
           {!uploadedResumeId && !analysisResult && (
-            <Card className="mb-8 shadow-sm animate-fade-in">
-              <CardHeader className="border-b bg-slate-50/80">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Upload className="h-5 w-5 text-blue-500" />
+            <Card className="mb-8 shadow-sm animate-fade-in bg-card/50 backdrop-blur-sm border-border/40">
+              <CardHeader className="border-b border-border/40 bg-secondary/30">
+                <CardTitle className="flex items-center gap-2 text-xl text-foreground font-heading">
+                  <div className="p-1.5 rounded-md bg-violet-500/10 text-violet-500">
+                    <Upload className="h-5 w-5" />
+                  </div>
                   Step 1: Upload Your Resume
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground text-base">
                   Upload your resume in PDF or DOCX format for AI analysis
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 {/* File input area */}
                 <div 
-                  className={`flex flex-col items-center py-12 border-2 ${isDragActive ? 'border-blue-400 bg-blue-50' : 'border-dashed border-gray-300 bg-gray-50'} rounded-lg transition-all duration-200 ease-in-out`}
+                  className={`flex flex-col items-center py-6 sm:py-8 md:py-12 border-2 ${isDragActive ? 'border-primary bg-secondary' : 'border-dashed border-border bg-secondary hover:border-primary/50'} rounded-lg transition-all duration-200 ease-in-out`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
-                  <div className={`w-16 h-16 rounded-full ${file ? 'bg-blue-100' : 'bg-blue-50'} flex items-center justify-center mb-4 transition-all`}>
-                    <Upload size={30} className={`${file ? 'text-blue-600' : 'text-blue-400'} transition-all`} />
+                  <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full ${file ? 'bg-primary/10' : 'bg-secondary'} flex items-center justify-center mb-3 sm:mb-4 transition-all`}>
+                    <Upload size={24} className={`sm:size-[30px] ${file ? 'text-primary' : 'text-primary/70'} transition-all`} />
                   </div>
-                  <p className="text-lg font-medium mb-2">{isDragActive ? 'Drop your file here' : 'Drag and drop your resume'}</p>
-                  <p className="text-gray-500 mb-6">or</p>
+                  <p className="text-sm sm:text-lg font-medium mb-1 sm:mb-2 text-foreground">{isDragActive ? 'Drop your file here' : 'Drag and drop your resume'}</p>
+                  <p className="text-muted-foreground mb-6">or</p>
                   <Input
                     type="file"
                     accept=".pdf,.docx"
@@ -275,24 +277,24 @@ const AnalyzeResume = () => {
                   />
                   <label
                     htmlFor="resume-upload"
-                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-white bg-blue-600 hover:bg-blue-700 h-10 px-6 py-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer shadow-sm hover:shadow'}`}
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 text-primary-foreground bg-primary hover:bg-primary/90 h-10 px-6 py-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer shadow-sm hover:shadow'}`}
                     aria-disabled={isLoading}
                   >
                     Browse Files
                   </label>
                   {file && (
-                    <div className="mt-6 text-sm flex items-center gap-2 bg-white p-3 rounded-md border border-blue-100 shadow-sm max-w-sm w-full">
-                      <div className="p-2 bg-blue-50 rounded-full">
-                        <FileText className="h-5 w-5 text-blue-500" />
+                    <div className="mt-6 text-sm flex items-center gap-2 bg-card p-3 rounded-md border border-border shadow-sm max-w-sm w-full">
+                      <div className="p-2 bg-secondary rounded-full">
+                        <FileText className="h-5 w-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="truncate font-medium" title={file.name}>{file.name}</p>
-                        <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                        <p className="truncate font-medium text-foreground" title={file.name}>{file.name}</p>
+                        <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-gray-500 hover:bg-red-50 hover:text-red-500"
+                        className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                         onClick={clearFile}
                         disabled={isLoading}
                         title="Clear selection"
@@ -303,21 +305,21 @@ const AnalyzeResume = () => {
                   )}
                 </div>
                 {/* Upload Button */}
-                <div className="mt-6 flex justify-center">
+                <div className="mt-8 flex justify-center">
                   <Button
                     onClick={handleUpload}
                     disabled={!file || isLoading}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 h-11 transition-all duration-200"
+                    className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white px-8 py-6 h-12 rounded-xl transition-all duration-300 text-base font-semibold"
                   >
                     {isLoading ? (
                       <>
-                        <CircleDashed className="mr-2 h-4 w-4 animate-spin" />
+                        <CircleDashed className="mr-2 h-5 w-5 animate-spin" />
                         Uploading...
                       </>
                     ) : (
                       <>
                         Upload Resume
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        <ArrowRight className="ml-2 h-5 w-5" />
                       </>
                     )}
                   </Button>
@@ -328,47 +330,47 @@ const AnalyzeResume = () => {
 
           {/* Step 2: Analyze Button */}
           {uploadedResumeId && !analysisResult && (
-            <Card className="mb-8 shadow-sm border-blue-100 animate-fade-in">
-              <CardHeader className="border-b bg-blue-50/70">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <BarChart4 className="h-5 w-5 text-blue-500" />
+            <Card className="mb-8 shadow-sm border-border animate-fade-in bg-card">
+              <CardHeader className="border-b border-border bg-secondary">
+                <CardTitle className="flex items-center gap-2 text-xl text-foreground">
+                  <BarChart4 className="h-5 w-5 text-primary" />
                   Step 2: Analyze Resume
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground">
                   Your resume is uploaded and ready for AI analysis
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg mb-6">
+                <div className="flex items-center gap-4 p-4 bg-secondary rounded-lg mb-6">
                   <div className="flex-shrink-0">
-                    <CheckCircle2 className="h-8 w-8 text-green-500" />
+                    <CheckCircle2 className="h-8 w-8 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium">Resume uploaded successfully</p>
-                    <p className="text-sm text-gray-600">Resume ID: {uploadedResumeId}</p>
+                    <p className="font-medium text-foreground">Resume uploaded successfully</p>
+                    <p className="text-sm text-muted-foreground">Resume ID: {uploadedResumeId}</p>
                   </div>
                 </div>
                 
-                <p className="text-center mb-8 text-gray-600">
+                <p className="text-center mb-8 text-muted-foreground">
                   Click the button below to get detailed scores and suggestions to improve your resume
                 </p>
                 
                 {/* Button to trigger analysis */}
-                <div className="flex justify-center">
+                <div className="flex justify-center mt-8">
                   <Button
                     onClick={handleAnalysisTrigger}
                     disabled={isLoading}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 h-11 transition-all duration-200"
+                    className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white px-8 py-6 h-12 rounded-xl transition-all duration-300 text-base font-semibold"
                   >
                     {isLoading ? (
                       <>
-                        <CircleDashed className="mr-2 h-4 w-4 animate-spin" />
+                        <CircleDashed className="mr-2 h-5 w-5 animate-spin" />
                         Analyzing Resume...
                       </>
                     ) : (
                       <>
                         Analyze Now
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        <ArrowRight className="ml-2 h-5 w-5" />
                       </>
                     )}
                   </Button>
@@ -381,20 +383,20 @@ const AnalyzeResume = () => {
           {analysisResult && (
             <div className="space-y-10 animate-fade-in">
               {/* Overall Score */}
-              <Card className="overflow-hidden shadow-sm border-blue-100">
-                <CardHeader className="pb-2 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart4 className="h-5 w-5 text-blue-500" />
+              <Card className="overflow-hidden shadow-sm border-border bg-card">
+                <CardHeader className="pb-2 border-b border-border bg-secondary">
+                  <CardTitle className="flex items-center gap-2 text-foreground">
+                    <BarChart4 className="h-5 w-5 text-primary" />
                     Overall Resume Score
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-muted-foreground">
                     Based on formatting, content quality, keywords, and impact
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="pt-8 pb-10">
-                  <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                <CardContent className="pt-4 sm:pt-6">
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-4 sm:gap-6 md:gap-8">
                     <div className="relative">
-                      <div className="w-52 h-52 relative">
+                      <div className="w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 relative">
                         {/* Background circle */}
                         <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
                           <circle
@@ -402,7 +404,7 @@ const AnalyzeResume = () => {
                             cy="60"
                             r="54"
                             fill="none"
-                            stroke="#E5E7EB"
+                            stroke="hsl(var(--border))"
                             strokeWidth="10"
                           />
                           {/* Progress circle */}
@@ -411,7 +413,7 @@ const AnalyzeResume = () => {
                             cy="60"
                             r="54"
                             fill="none"
-                            stroke={analysisResult.overallScore > 80 ? "#4F46E5" : analysisResult.overallScore > 60 ? "#10B981" : "#F97316"}
+                            stroke="hsl(var(--primary))"
                             strokeWidth="10"
                             strokeLinecap="round"
                             strokeDasharray={2 * Math.PI * 54}
@@ -422,36 +424,26 @@ const AnalyzeResume = () => {
                         
                         {/* Score text in the center */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className={`text-5xl font-bold ${getScoreColor(analysisResult.overallScore)}`}>
+                          <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
                             {analysisResult.overallScore}%
                           </span>
-                          <span className="text-sm text-gray-500 mt-1">Overall Score</span>
+                          <span className="text-xs sm:text-sm text-muted-foreground mt-1">Overall Score</span>
                         </div>
                       </div>
                     </div>
                     
                     <div className="max-w-md">
-                      <h3 className="text-xl font-bold mb-3">Score Summary</h3>
-                      <div className={`p-4 rounded-lg mb-4 ${
-                        analysisResult.overallScore >= 80 ? 'bg-green-50 border border-green-100' :
-                        analysisResult.overallScore >= 60 ? 'bg-blue-50 border border-blue-100' :
-                        'bg-amber-50 border border-amber-100'
-                      }`}>
+                      <h3 className="text-2xl font-bold mb-4 text-foreground font-heading">Score Summary</h3>
+                      <div className="p-5 rounded-xl mb-4 bg-gradient-to-br from-violet-500/10 to-blue-500/10 border border-violet-500/20">
                         <div className="flex items-start gap-3">
-                          {analysisResult.overallScore >= 80 ? (
-                            <CheckCircle2 className="h-6 w-6 text-green-500 mt-0.5" />
-                          ) : analysisResult.overallScore >= 60 ? (
-                            <CheckCircle2 className="h-6 w-6 text-blue-500 mt-0.5" />
-                          ) : (
-                            <AlertTriangle className="h-6 w-6 text-amber-500 mt-0.5" />
-                          )}
+                          <CheckCircle2 className="h-6 w-6 text-violet-500 mt-0.5" />
                           <div>
-                            <p className="font-medium mb-1">
+                            <p className="font-semibold mb-1 text-foreground text-lg">
                               {analysisResult.overallScore >= 80 ? 'Your resume is quite strong!' :
                                analysisResult.overallScore >= 60 ? 'Your resume is on the right track' :
                                'Your resume needs improvement'}
                             </p>
-                            <p className="text-sm text-gray-700">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
                               {analysisResult.overallScore >= 80 ? 'Your resume demonstrates strong formatting, content, and keyword optimization. Apply with confidence!' :
                                analysisResult.overallScore >= 60 ? 'Your resume has solid elements but could use improvement in some areas to stand out more.' :
                                'Your resume requires significant improvements to be competitive in today\'s job market.'}
@@ -460,7 +452,7 @@ const AnalyzeResume = () => {
                         </div>
                       </div>
                       
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         <p>Analysis performed {analysisResult.analysisTimestamp ? 
                           new Date(analysisResult.analysisTimestamp).toLocaleString() : 
                           'recently'}
@@ -473,27 +465,27 @@ const AnalyzeResume = () => {
 
               {/* Category Scores */}
               <div>
-                <h2 className="text-2xl font-semibold mb-5 pl-1 border-l-4 border-blue-500 pl-3">Category Breakdown</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-5 pl-1 border-l-4 border-primary pl-3 text-foreground">Category Breakdown</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                   <ResumeScoreCard
                     category="Formatting"
                     score={analysisResult?.categoryScores?.formatting || 0}
-                    color="#3B82F6" // blue
+                    color="hsl(var(--primary))"
                   />
                   <ResumeScoreCard
                     category="Content Quality"
                     score={analysisResult?.categoryScores?.content || 0}
-                    color="#10B981" // green
+                    color="hsl(var(--primary))"
                   />
                   <ResumeScoreCard
                     category="Keywords"
                     score={analysisResult?.categoryScores?.keywords || 0}
-                    color="#F97316" // orange
+                    color="hsl(var(--primary))"
                   />
                   <ResumeScoreCard
                     category="Impact"
                     score={analysisResult?.categoryScores?.impact || 0}
-                    color="#8B5CF6" // purple
+                    color="hsl(var(--primary))"
                   />
                 </div>
               </div>
@@ -501,73 +493,74 @@ const AnalyzeResume = () => {
               {/* Two column layout for suggestions and strengths */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Suggestions */}
-                <Card className="shadow-sm border-amber-100 h-full">
-                  <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-orange-50">
-                    <CardTitle className="flex items-center gap-2">
-                      <Lightbulb className="h-5 w-5 text-amber-500" />
+                <Card className="shadow-sm border-border h-full bg-card">
+                  <CardHeader className="border-b border-border bg-secondary">
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <Lightbulb className="h-5 w-5 text-primary" />
                       Areas for Improvement
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-muted-foreground">
                       Actionable suggestions to enhance your resume
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <ul className="space-y-4">
                       {analysisResult?.suggestions?.map((suggestion, index) => (
-                        <li key={index} className="flex items-start p-3 rounded-lg transition-all duration-200 hover:bg-amber-50">
-                          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-amber-100 text-amber-600 text-sm font-medium mr-3 mt-0.5 flex-shrink-0">
+                        <li key={index} className="flex items-start p-3 rounded-lg transition-all duration-200 hover:bg-secondary">
+                          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-secondary text-primary text-sm font-medium mr-3 mt-0.5 flex-shrink-0">
                             {index + 1}
                           </span>
-                          <span className="text-gray-700">{suggestion}</span>
+                          <span className="text-muted-foreground">{suggestion}</span>
                         </li>
-                      )) || <li className="p-3 text-gray-500">No suggestions available.</li>}
+                      )) || <li className="p-3 text-muted-foreground">No suggestions available.</li>}
                     </ul>
                   </CardContent>
                 </Card>
 
                 {/* Strengths */}
-                <Card className="shadow-sm border-green-100 h-full">
-                  <CardHeader className="border-b bg-gradient-to-r from-green-50 to-emerald-50">
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-green-500" />
+                <Card className="shadow-sm border-border h-full bg-card">
+                  <CardHeader className="border-b border-border bg-secondary">
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                      <Award className="h-5 w-5 text-primary" />
                       Resume Strengths
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-muted-foreground">
                       Areas where your resume performs well
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <ul className="space-y-4">
                       {analysisResult?.strengths?.map((strength, index) => (
-                        <li key={index} className="flex items-start p-3 rounded-lg transition-all duration-200 hover:bg-green-50">
-                          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-green-100 text-green-600 text-sm font-bold mr-3 mt-0.5 flex-shrink-0">
+                        <li key={index} className="flex items-start p-3 rounded-lg transition-all duration-200 hover:bg-secondary">
+                          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-secondary text-primary text-sm font-bold mr-3 mt-0.5 flex-shrink-0">
                             ✓
                           </span>
-                          <span className="text-gray-700">{strength}</span>
+                          <span className="text-muted-foreground">{strength}</span>
                         </li>
-                      )) || <li className="p-3 text-gray-500">No strengths highlighted.</li>}
+                      )) || <li className="p-3 text-muted-foreground">No strengths highlighted.</li>}
                     </ul>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Actions After Analysis */}
-              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-sm">
-                <h3 className="text-xl font-bold mb-4 text-center">Next Steps</h3>
-                <p className="text-center text-gray-600 mb-6">
+              <div className="bg-card/50 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-border/40 shadow-sm mt-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-500/10 to-blue-500/10 blur-2xl -z-10 rounded-full translate-x-1/2 -translate-y-1/2" />
+                <h3 className="text-xl sm:text-2xl font-bold mb-3 text-center text-foreground font-heading">Next Steps</h3>
+                <p className="text-center text-muted-foreground mb-6 sm:mb-8 text-base">
                   Based on your analysis, improve your resume or find matching jobs
                 </p>
-                <div className="flex flex-wrap gap-4 justify-center">
+                <div className="flex flex-wrap gap-3 sm:gap-4 justify-center">
                   <Button
                     onClick={handleUploadAnother}
                     variant="outline"
-                    className="min-w-36 h-12 border-gray-300 hover:bg-gray-100 hover:text-gray-900 transition-all"
+                    className="min-w-32 sm:min-w-36 h-10 sm:h-12 border-border hover:bg-secondary hover:text-foreground transition-all"
                   >
                     <Upload className="mr-2 h-4 w-4" /> Upload Another
                   </Button>
                   <Button 
                     onClick={() => navigate('/builder')}
-                    className="min-w-36 h-12 bg-blue-600 hover:bg-blue-700 text-white transition-all" 
+                    className="min-w-32 sm:min-w-36 h-10 sm:h-12 bg-primary hover:bg-primary/90 text-primary-foreground transition-all" 
                   >
                     <FileText className="mr-2 h-4 w-4" /> Build Improved Resume
                   </Button>
