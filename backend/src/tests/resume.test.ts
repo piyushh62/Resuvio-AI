@@ -1,10 +1,5 @@
 import request from 'supertest';
-import path from 'path';
-import fs from 'fs';
 import app from '../server'; // Import the Express app
-import admin from 'firebase-admin'; // Import to access mocked types if needed
-import pdfParse from 'pdf-parse'; // Import to access mocked types if needed
-import mammoth from 'mammoth'; // Import to access mocked types if needed
 import { authenticateToken } from '../middleware/auth.middleware'; // Import to mock
 
 // --- Mock Dependencies ---
@@ -132,7 +127,7 @@ describe('POST /api/resumes/upload', () => {
 
     it('should return 401 if user is not authenticated', async () => {
         // Arrange: Modify the auth mock to simulate failure
-        (authenticateToken as jest.Mock).mockImplementation((req, res, next) => {
+        (authenticateToken as jest.Mock).mockImplementation((req, res, _next) => {
             res.status(401).json({ message: 'Unauthorized: Mock Failure' });
             // Do not call next()
         });

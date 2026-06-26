@@ -3,6 +3,8 @@ import { Request, Response } from 'express';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { GeneratedResume, ResumeInputData } from '../models/generated-resume.model';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
 // Import initialized db from config
 import { db } from '../config/firebase.config';
 import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
@@ -10,6 +12,22 @@ import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldVal
 interface CustomRequest extends Request {
     user?: admin.auth.DecodedIdToken;
 }
+
+interface WorkspaceResumeDraft {
+    userId: string;
+    title: string;
+    workspaceData: unknown;
+    createdAt?: admin.firestore.FieldValue | admin.firestore.Timestamp;
+    updatedAt: admin.firestore.FieldValue | admin.firestore.Timestamp;
+}
+
+const parseJsonFromText = (text: string): unknown => {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+        throw new Error('AI response did not contain a JSON object.');
+    }
+    return JSON.parse(jsonMatch[0]);
+};
 
 // const db = admin.firestore(); // Removed: Use imported db
 
@@ -120,7 +138,7 @@ export const downloadGeneratedResume = async (req: CustomRequest, res: Response)
             return;
         }
         const userId = req.user.uid;
-        const { generatedResumeId } = req.params;
+        const generatedResumeId = req.params.generatedResumeId as string;
 
         if (!generatedResumeId) {
             res.status(400).json({ message: 'Bad Request: Missing generatedResumeId parameter' });
@@ -282,3 +300,382 @@ export const getGeneratedResumes = async (req: CustomRequest, res: Response): Pr
         }
     }
 }; 
+
+export const saveWorkspaceResume = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        const userId = req.user.uid;
+        const { resumeId, title, workspaceData } = req.body;
+
+        if (!workspaceData || typeof workspaceData !== 'object') {
+            res.status(400).json({ message: 'Bad Request: workspaceData is required' });
+            return;
+        }
+
+        const resumeTitle = typeof title === 'string' && title.trim() ? title.trim() : 'Untitled Resume';
+        const collection = db.collection('resumeWorkspaces');
+
+        if (resumeId) {
+            const resumeRef = collection.doc(String(resumeId));
+            const existing = await resumeRef.get();
+
+            if (!existing.exists) {
+                res.status(404).json({ message: 'Resume workspace not found' });
+                return;
+            }
+
+            const existingData = existing.data() as WorkspaceResumeDraft;
+            if (existingData.userId !== userId) {
+                res.status(403).json({ message: 'Forbidden: You do not own this resume workspace' });
+                return;
+            }
+
+            await resumeRef.update({
+                title: resumeTitle,
+                workspaceData,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            res.status(200).json({ message: 'Resume saved successfully', resumeId });
+            return;
+        }
+
+        const docRef = await collection.add({
+            userId,
+            title: resumeTitle,
+            workspaceData,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        res.status(201).json({ message: 'Resume created successfully', resumeId: docRef.id });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[workspaceSave]: Error saving resume workspace:', error.message);
+            res.status(500).json({ message: 'Internal server error saving resume workspace', error: error.message });
+        }
+    }
+};
+
+export const getWorkspaceResume = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        const userId = req.user.uid;
+        const resumeId = req.params.resumeId as string;
+
+        if (!resumeId) {
+            res.status(400).json({ message: 'Bad Request: Missing resumeId parameter' });
+            return;
+        }
+
+        const resumeDoc = await db.collection('resumeWorkspaces').doc(resumeId).get();
+
+        if (!resumeDoc.exists) {
+            res.status(404).json({ message: 'Resume workspace not found' });
+            return;
+        }
+
+        const data = resumeDoc.data() as WorkspaceResumeDraft;
+        if (data.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not own this resume workspace' });
+            return;
+        }
+
+        res.status(200).json({
+            resumeId: resumeDoc.id,
+            title: data.title,
+            workspaceData: data.workspaceData,
+            updatedAt: data.updatedAt,
+        });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[workspaceGet]: Error fetching resume workspace:', error.message);
+            res.status(500).json({ message: 'Internal server error fetching resume workspace', error: error.message });
+        }
+    }
+};
+
+export const getWorkspaceResumes = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        const userId = req.user.uid;
+        const snapshot = await db.collection('resumeWorkspaces')
+            .where('userId', '==', userId)
+            .get();
+
+        const workspaces = snapshot.docs.map(doc => {
+            const data = doc.data() as WorkspaceResumeDraft;
+            const workspaceData = data.workspaceData as {
+                personal?: { name?: string; headline?: string };
+                templateId?: string;
+                sections?: unknown[];
+            };
+
+            return {
+                id: doc.id,
+                title: data.title,
+                updatedAt: data.updatedAt,
+                createdAt: data.createdAt,
+                candidateName: workspaceData?.personal?.name || '',
+                headline: workspaceData?.personal?.headline || '',
+                templateId: workspaceData?.templateId || '',
+                sectionCount: Array.isArray(workspaceData?.sections) ? workspaceData.sections.length : 0,
+            };
+        }).sort((a, b) => {
+            const bTime = 'seconds' in (b.updatedAt || {}) ? (b.updatedAt as admin.firestore.Timestamp).seconds : 0;
+            const aTime = 'seconds' in (a.updatedAt || {}) ? (a.updatedAt as admin.firestore.Timestamp).seconds : 0;
+            return bTime - aTime;
+        });
+
+        res.status(200).json({ workspaces });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[workspaceList]: Error fetching resume workspaces:', error.message);
+            res.status(500).json({ message: 'Internal server error fetching resume workspaces', error: error.message });
+        }
+    }
+};
+
+export const deleteWorkspaceResume = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        const userId = req.user.uid;
+        const resumeId = req.params.resumeId as string;
+
+        if (!resumeId) {
+            res.status(400).json({ message: 'Bad Request: Missing resumeId parameter' });
+            return;
+        }
+
+        const resumeRef = db.collection('resumeWorkspaces').doc(resumeId);
+        const existing = await resumeRef.get();
+
+        if (!existing.exists) {
+            res.status(404).json({ message: 'Resume workspace not found' });
+            return;
+        }
+
+        const existingData = existing.data() as WorkspaceResumeDraft;
+        if (existingData.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not own this resume workspace' });
+            return;
+        }
+
+        await resumeRef.delete();
+        res.status(200).json({ message: 'Resume deleted successfully' });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[workspaceDelete]: Error deleting resume workspace:', error.message);
+            res.status(500).json({ message: 'Internal server error deleting resume workspace', error: error.message });
+        }
+    }
+};
+
+export const duplicateWorkspaceResume = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        const userId = req.user.uid;
+        const resumeId = req.params.resumeId as string;
+
+        if (!resumeId) {
+            res.status(400).json({ message: 'Bad Request: Missing resumeId parameter' });
+            return;
+        }
+
+        const resumeRef = db.collection('resumeWorkspaces').doc(resumeId);
+        const existing = await resumeRef.get();
+
+        if (!existing.exists) {
+            res.status(404).json({ message: 'Resume workspace not found' });
+            return;
+        }
+
+        const existingData = existing.data() as WorkspaceResumeDraft;
+        if (existingData.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not own this resume workspace' });
+            return;
+        }
+
+        const existingWorkspaceData = existingData.workspaceData as Record<string, unknown>;
+        const newTitle = `${existingData.title || 'Untitled Resume'} (Copy)`;
+
+        const docRef = await db.collection('resumeWorkspaces').add({
+            userId,
+            title: newTitle,
+            workspaceData: {
+                ...existingWorkspaceData,
+                title: newTitle,
+            },
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        res.status(201).json({ message: 'Resume duplicated successfully', resumeId: docRef.id });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[workspaceDuplicate]: Error duplicating resume workspace:', error.message);
+            res.status(500).json({ message: 'Internal server error duplicating resume workspace', error: error.message });
+        }
+    }
+};
+
+export const aiAssistResumeField = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        const { fieldType, currentText, context } = req.body;
+        const safeFieldType = typeof fieldType === 'string' ? fieldType : 'resume field';
+        const safeCurrentText = typeof currentText === 'string' ? currentText : '';
+        const safeContext = typeof context === 'string' ? context : '';
+
+        const prompt = `
+Improve this ${safeFieldType} for a professional, ATS-friendly resume.
+Keep it concise, specific, and truthful to the provided context.
+Return only the improved text, no markdown wrapper.
+
+Current text:
+${safeCurrentText || '(empty)'}
+
+Context:
+${safeContext || '(none)'}
+        `.trim();
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const suggestion = response.text().trim();
+
+        res.status(200).json({ suggestion });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[aiAssist]: Error generating resume suggestion:', error.message);
+            res.status(500).json({ message: 'Internal server error generating AI suggestion', error: error.message });
+        }
+    }
+};
+
+export const parseResumeUploadForWorkspace = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        if (!req.file) {
+            res.status(400).json({ message: 'Bad Request: No file uploaded' });
+            return;
+        }
+
+        let parsedText = '';
+        if (req.file.mimetype === 'application/pdf') {
+            const data = await pdfParse(req.file.buffer);
+            parsedText = data.text;
+        } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            const { value } = await mammoth.extractRawText({ buffer: req.file.buffer });
+            parsedText = value;
+        } else {
+            res.status(400).json({ message: 'Unsupported file type. Upload a PDF or DOCX file.' });
+            return;
+        }
+
+        if (!parsedText.trim()) {
+            res.status(400).json({ message: 'Could not read text from uploaded resume.' });
+            return;
+        }
+
+        const prompt = `
+Convert the resume text into this exact JSON shape for a resume builder.
+Return only valid JSON. Do not include markdown.
+Use empty strings or empty arrays where data is missing.
+
+{
+  "title": "Untitled Resume",
+  "templateId": "modern",
+  "stylePreset": "mono",
+  "layoutPreset": "steady",
+  "sections": ["personal", "summary", "experience", "education", "skills"],
+  "personal": {
+    "name": "",
+    "headline": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "links": []
+  },
+  "summary": "",
+  "experience": [
+    {
+      "jobTitle": "",
+      "company": "",
+      "employmentType": "",
+      "location": "",
+      "dates": "",
+      "description": ""
+    }
+  ],
+  "education": [
+    {
+      "degree": "",
+      "institution": "",
+      "honors": "",
+      "dates": "",
+      "gpa": "",
+      "description": ""
+    }
+  ],
+  "skills": [
+    {
+      "category": "",
+      "items": ""
+    }
+  ],
+  "projects": [],
+  "certifications": [],
+  "extras": {},
+  "targetJobDescription": ""
+}
+
+Resume text:
+--- START ---
+${parsedText.slice(0, 18000)}
+--- END ---
+        `.trim();
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const workspaceData = parseJsonFromText(response.text());
+
+        res.status(200).json({
+            message: 'Resume parsed successfully',
+            workspaceData,
+            sourceFilename: req.file.originalname,
+        });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[workspaceParseUpload]: Error parsing uploaded resume:', error.message);
+            res.status(500).json({ message: 'Internal server error parsing uploaded resume', error: error.message });
+        }
+    }
+};

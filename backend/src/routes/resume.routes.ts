@@ -16,6 +16,7 @@ router.get(
 // POST /api/resumes/upload - Upload and parse a resume
 router.post(
     '/upload',
+    authenticateToken,
     upload.single('resumeFile'), // Handle single file upload named 'resumeFile'
     uploadResume // Process the uploaded file
 );
@@ -23,6 +24,7 @@ router.post(
 // POST /api/resumes/:resumeId/analyze - Analyze a specific resume
 router.post(
     '/:resumeId/analyze',
+    authenticateToken,
     analyzeResume // Call the analysis controller function
 );
 

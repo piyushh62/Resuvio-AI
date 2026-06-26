@@ -1,7 +1,18 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth.middleware';
-// Import controller
-import { generateResume, downloadGeneratedResume, getGeneratedResumes } from '../controllers/builder.controller';
+import upload from '../config/multer.config';
+import {
+    aiAssistResumeField,
+    deleteWorkspaceResume,
+    downloadGeneratedResume,
+    duplicateWorkspaceResume,
+    generateResume,
+    getGeneratedResumes,
+    getWorkspaceResume,
+    getWorkspaceResumes,
+    parseResumeUploadForWorkspace,
+    saveWorkspaceResume,
+} from '../controllers/builder.controller';
 
 const router = Router();
 
@@ -19,6 +30,42 @@ router.post(
     generateResume // Use the controller function
 );
 
+// POST /api/builder/workspace - Create or update a structured resume workspace
+router.post(
+    '/workspace',
+    authenticateToken,
+    saveWorkspaceResume
+);
+
+// GET /api/builder/workspaces - List structured resume workspaces
+router.get(
+    '/workspaces',
+    authenticateToken,
+    getWorkspaceResumes
+);
+
+// GET /api/builder/workspace/:resumeId - Load one structured resume workspace
+router.get(
+    '/workspace/:resumeId',
+    authenticateToken,
+    getWorkspaceResume
+);
+
+// POST /api/builder/assist - Improve one resume field with AI
+router.post(
+    '/assist',
+    authenticateToken,
+    aiAssistResumeField
+);
+
+// POST /api/builder/parse-upload - Parse PDF/DOCX and prefill workspace data
+router.post(
+    '/parse-upload',
+    authenticateToken,
+    upload.single('resumeFile'),
+    parseResumeUploadForWorkspace
+);
+
 // GET /api/builder/download/:generatedResumeId - Download a generated resume as PDF
 router.get(
     '/download/:generatedResumeId',
@@ -26,4 +73,18 @@ router.get(
     downloadGeneratedResume // Use the download controller function
 );
 
-export default router; 
+// DELETE /api/builder/workspace/:resumeId - Delete a resume workspace
+router.delete(
+    '/workspace/:resumeId',
+    authenticateToken,
+    deleteWorkspaceResume
+);
+
+// POST /api/builder/workspace/:resumeId/duplicate - Duplicate a resume workspace
+router.post(
+    '/workspace/:resumeId/duplicate',
+    authenticateToken,
+    duplicateWorkspaceResume
+);
+
+export default router;

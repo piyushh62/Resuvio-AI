@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { AxiosError } from 'axios';
 
 interface ApiError extends Error {
     code?: string;
@@ -40,8 +39,11 @@ const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gem
 // Placeholder for uploadResume function
 export const uploadResume = async (req: CustomRequest, res: Response): Promise<void> => {
     try {
-        // If user is not authenticated, assign a generic or null userId
-        const userId = req.user ? req.user.uid : 'anonymous';
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+        const userId = req.user.uid;
 
         // Check if a file was uploaded by multer
         if (!req.file) {
@@ -96,8 +98,12 @@ export const uploadResume = async (req: CustomRequest, res: Response): Promise<v
 // --- Analyze Resume Function ---
 export const analyzeResume = async (req: CustomRequest, res: Response): Promise<void> => {
     try {
-        const userId = req.user ? req.user.uid : 'anonymous';
-        const { resumeId } = req.params;
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+        const userId = req.user.uid;
+        const resumeId = req.params.resumeId as string;
 
         if (!resumeId) {
             res.status(400).json({ message: 'Bad Request: Missing resumeId parameter' });
@@ -115,8 +121,8 @@ export const analyzeResume = async (req: CustomRequest, res: Response): Promise<
 
         const resumeData = resumeDoc.data() as Resume;
 
-        // Verify ownership, allowing anonymous users to analyze anonymously uploaded resumes
-        if (resumeData.userId !== userId && !(resumeData.userId === 'anonymous' && userId === 'anonymous')) {
+        // Verify ownership
+        if (resumeData.userId !== userId) {
             res.status(403).json({ message: 'Forbidden: You do not own this resume' });
             return;
         }

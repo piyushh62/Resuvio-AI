@@ -1,6 +1,4 @@
 import request from 'supertest';
-import express from 'express';
-import * as admin from 'firebase-admin';
 
 interface FirebaseAuthError extends Error {
     code?: string;

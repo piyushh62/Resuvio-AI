@@ -1,11 +1,4 @@
 import { Request, Response } from 'express';
-import { AxiosError } from 'axios';
-
-interface ApiError extends Error {
-    code?: string;
-    status?: number;
-    response?: AxiosError['response'];
-}
 
 interface AnalysisResult {
     matchScore?: number;

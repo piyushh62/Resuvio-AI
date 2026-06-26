@@ -12,6 +12,8 @@ import matchRoutes from './routes/match.routes'; // Import match routes
 import tipsRoutes from './routes/tips.routes'; // Import tips routes
 import coverLetterRoutes from './routes/coverLetter.routes'; // Import the new routes
 import activityRoutes from './routes/activity.routes'; // Import activity routes
+import creditRoutes from './routes/credit.routes'; // Import credit/usage routes
+import paymentRoutes from './routes/payment.routes'; // Import payment routes
 
 dotenv.config(); // Load environment variables from .env file
 
@@ -38,6 +40,8 @@ app.use('/api/match', matchRoutes); // Use match routes under /api/match
 app.use('/api/tips', tipsRoutes); // Use tips routes under /api/tips
 app.use('/api/cover-letter', coverLetterRoutes); // Use the new routes
 app.use('/api/activity', activityRoutes); // Use activity routes
+app.use('/api/credits', creditRoutes); // Use credit/usage routes
+app.use('/api/payments', paymentRoutes); // Use payment routes
 
 // Basic route
 app.get('/', (req: Request, res: Response) => {
