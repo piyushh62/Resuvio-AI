@@ -1,5 +1,5 @@
 {
-  "name": "ai-career-forge",
+  "name": "resuvio-ai",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -48,6 +48,7 @@
     "embla-carousel-react": "^8.3.0",
     "firebase": "^11.6.0",
     "framer-motion": "^12.11.0",
+    "html2pdf.js": "^0.14.0",
     "input-otp": "^1.2.4",
     "ldrs": "^1.1.7",
     "lucide-react": "^0.462.0",

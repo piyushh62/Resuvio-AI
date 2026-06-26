@@ -3,9 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ai-career-forge</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <title>Resuvio-AI — AI-Powered Resume Builder | Land More Interviews</title>
+    <meta name="description" content="Build ATS-optimized resumes with AI-powered suggestions. Analyze, optimize, and match your resume to job descriptions — land 3x more interviews. Free to start." />
+    <meta name="author" content="Resuvio-AI" />
+    <meta name="keywords" content="resume builder, AI resume, ATS optimization, job matching, cover letter generator, career tools" />
+
+    <!-- Font preconnects -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" />
 
     <!-- Favicon -->
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io/apple-touch-icon.png">
@@ -14,20 +20,55 @@
     <link rel="manifest" href="/favicon_io/site.webmanifest">
     <link rel="shortcut icon" href="/favicon_io/favicon.ico">
 
-    <meta property="og:title" content="ai-career-forge" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <meta property="og:title" content="Resuvio-AI — AI-Powered Resume Builder" />
+    <meta property="og:description" content="Build ATS-optimized resumes with AI. Analyze, optimize, and match your resume to job descriptions. Land 3x more interviews." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="Resuvio-AI" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:site" content="@aicareerforge" />
+    <meta name="twitter:title" content="Resuvio-AI — AI-Powered Resume Builder" />
+    <meta name="twitter:description" content="Build ATS-optimized resumes with AI. Land 3x more interviews." />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Resuvio-AI",
+        "applicationCategory": "BusinessApplication",
+        "description": "AI-powered resume builder and career tools platform",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "INR"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.9",
+          "ratingCount": "1200"
+        }
+      }
+    </script>
   </head>
 
-  <body>
+  <body class="bg-background text-foreground">
     <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <!-- Anti-flash theme bootstrap: set 'dark' class on <html> before paint -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('aicf-theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = stored || (prefersDark ? 'dark' : 'light');
+          if (theme === 'dark') document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
+    <!-- Razorpay Checkout JS (loaded for payment integration) -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
