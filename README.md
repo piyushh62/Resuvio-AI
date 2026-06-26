@@ -1,17 +1,8 @@
-# AI Career Forge 🚀
+# Resuvio-AI 🚀
 
-<p align="center">
-  <a href="https://ai-career-forge.vercel.app" target="_blank">
-    <img src="https://img.shields.io/badge/Live%20View-Click%20Here-brightgreen?style=for-the-badge&logo=vercel" alt="Live View"/>
-  </a>
-</p>
-
-![Banner](public/screenshots/banner1.png)
-
-AI Career Forge is a web application designed to assist users in optimizing their resumes and matching them with suitable job descriptions using AI.
+Resuvio-AI is a comprehensive web application that helps users optimize their resumes, analyze their content using AI, match them against job descriptions, and generate professional cover letters.
 
 ## Table of Contents
-- [Screenshots](#screenshots-)
 - [Features](#features)
 - [Technologies Used](#technologies-used)
 - [Project Structure](#project-structure)
@@ -26,42 +17,18 @@ AI Career Forge is a web application designed to assist users in optimizing thei
 - [License](#license)
 - [Contact](#contact)
 
-## Screenshots 📸
-Here's a visual tour of AI Career Forge:
-
-| Screenshot 1 | Screenshot 2 |
-|--------------|--------------|
-| ![Screenshot 1](public/screenshots/Screenshot%202025-07-16%20144141.png) | ![Screenshot 2](public/screenshots/Screenshot_16-7-2025_142356_ai-career-forge.vercel.app.jpeg) |
-| *Hero Section* | *Home Page* |
-
-| Screenshot 3 | Screenshot 4 |
-|--------------|--------------|
-| ![Screenshot 3](public/screenshots/Screenshot_16-7-2025_14465_ai-career-forge.vercel.app.jpeg) | ![Screenshot 4](public/screenshots/Screenshot_16-7-2025_144814_ai-career-forge.vercel.app.jpeg) |
-| *Resume Analysis* | *Resume Builder* |
-
-| Screenshot 5 | Screenshot 6 |
-|--------------|--------------|
-| ![Screenshot 5](public/screenshots/Screenshot_16-7-2025_153954_ai-career-forge.vercel.app.jpeg) | ![Screenshot 6](public/screenshots/Screenshot_16-7-2025_154059_ai-career-forge.vercel.app.jpeg) |
-| *Job Matching* | *Cover Letter Generation* |
-
-| Screenshot 7 | Screenshot 8 |
-|--------------|--------------|
-| ![Screenshot 7](public/screenshots/Screenshot_16-7-2025_154339_ai-career-forge.vercel.app.jpeg) | ![Screenshot 8](public/screenshots/Screenshot_16-7-2025_154425_ai-career-forge.vercel.app.jpeg) |
-| *Cover Letter Result* | *Help & Tips* |
-
-| Screenshot 9 | Screenshot 10 |
-|--------------|--------------|
-| ![Screenshot 9](public/screenshots/Screenshot_16-7-2025_15444_ai-career-forge.vercel.app.jpeg) | ![Screenshot 10](public/screenshots/screenshot-1752657460493.png) |
-| *Used Documents* | *Dashboard* |
-
 ## Features ✨
-*   **User Authentication:** Secure signup and login functionality using Firebase Authentication.
-*   **Resume Upload & Parsing:** Users can upload resumes in PDF or DOCX format.
-*   **AI Resume Analysis:** Provides feedback and scoring on uploaded resumes using AI (Google Generative AI).
-*   **AI Resume Builder:** Helps users generate professional resumes based on provided information.
-*   **Job Matching:** Compares user resumes (uploaded or generated) against job descriptions to assess suitability.
-*   **Resume Tips:** Offers general advice and best practices for resume writing.
-*   **User Dashboard:** A central place for authenticated users to manage their resumes, generate cover letters, and access features.
+*   **Secure Authentication:** Firebase-based user signup and login with secure token management.
+*   **Resume Upload & Parsing:** Support for PDF and DOCX file uploads with automatic content extraction.
+*   **AI-Powered Resume Analysis:** Intelligent analysis and scoring of uploaded resumes using Google Generative AI.
+*   **AI Resume Builder:** Create professional, ATS-optimized resumes from scratch or existing content.
+*   **Job Matching Engine:** Compare resumes against job descriptions to identify skill gaps and compatibility.
+*   **Cover Letter Generation:** AI-powered cover letter creation tailored to job descriptions.
+*   **Activity Tracking:** Monitor usage and activity history across the platform.
+*   **Credits System:** Flexible credit-based system for managing feature usage.
+*   **Payment Integration:** Razorpay integration for purchasing credits and premium features.
+*   **Referral Program:** Earn credits by referring other users.
+*   **Responsive Dashboard:** Intuitive dashboard for managing resumes, generating letters, and tracking progress.
 
 ## Technologies Used 🛠️
 **Frontend:**
@@ -85,7 +52,9 @@ Here's a visual tour of AI Career Forge:
 *   **AI:** Google Generative AI SDK (`@google/generative-ai`)
 *   **Database:** Firebase Firestore (for storing user data, resume metadata, generated content, etc.)
 *   **File Handling:** Multer (uploads), Mammoth (docx parsing), pdf-parse (pdf parsing)
-*   **API Testing:** Jest, Supertest (setup, actual tests might be pending)
+*   **PDF Generation:** pdf-lib for generating downloadable resumes
+*   **Payment Processing:** Razorpay SDK for payment integration
+*   **API Testing:** Jest, Supertest
 
 ## Project Structure 🗂️
 The project is organized into two main parts:
@@ -112,7 +81,7 @@ The project is organized into two main parts:
 *   **Database:** Firebase Firestore is used as the NoSQL database. It stores user account information, links to uploaded resumes (stored possibly in Firebase Storage or locally), parsed resume content, analysis scores, generated resume data, and job matching results.
 
 ## User Workflow 📊
-A typical user interaction with AI Career Forge follows these steps:
+A typical user interaction with Resuvio-AI follows these steps:
 
 1.  **Authentication:**
     *   New users sign up for an account.
@@ -130,27 +99,47 @@ A typical user interaction with AI Career Forge follows these steps:
 5.  **(Optional) Cover Letter:** Generate cover letters (feature implied by dashboard structure).
 
 ## API Endpoints Overview 📚
-The backend exposes RESTful API endpoints, primarily authenticated using Firebase ID tokens verified by the `auth.middleware.ts`.
+The backend exposes RESTful API endpoints authenticated using Firebase ID tokens verified by the auth middleware.
 
 Key route groups under `/api`:
 
-*   `/auth`:
-    *   `POST /signup`: User registration.
-    *   `POST /login`: User login.
-*   `/resumes` (Requires Authentication):
-    *   `GET /`: Get list of uploaded resumes for the authenticated user.
-    *   `POST /upload`: Upload a resume file (`resumeFile`) for parsing and storage.
-    *   `POST /:resumeId/analyze`: Trigger AI analysis for a specific uploaded resume.
-*   `/builder` (Requires Authentication):
-    *   `GET /generated`: Get list of resumes generated by the builder for the user.
-    *   `POST /generate`: Generate a new resume based on user input.
-    *   `GET /download/:generatedResumeId`: Download a specific generated resume (likely as PDF).
-*   `/match` (Requires Authentication):
-    *   `POST /resume-job`: Compare a user's resume (by ID or potentially text) against a provided job description.
-*   `/tips`:
-    *   `GET /`: Fetch general resume writing tips.
+**Authentication (`/auth`)**
+- `POST /signup` - User registration
+- `POST /login` - User login
 
-*(Refer to `backend/src/routes/*.routes.ts` and corresponding controllers in `backend/src/controllers/` for detailed request/response structures and logic.)*
+**Resume Management (`/resumes` - Protected)**
+- `GET /` - List all uploaded resumes
+- `POST /upload` - Upload and parse resume (PDF/DOCX)
+- `POST /:resumeId/analyze` - Get AI analysis for a resume
+- `GET /:resumeId` - Get resume details
+
+**Resume Builder (`/builder` - Protected)**
+- `GET /generated` - List generated resumes
+- `POST /generate` - Generate a new resume with AI
+- `GET /download/:id` - Download resume as PDF
+- `PUT /:id` - Update generated resume
+
+**Job Matching (`/match` - Protected)**
+- `POST /resume-job` - Match resume against job description
+
+**Cover Letter (`/cover-letter` - Protected)**
+- `POST /generate` - Generate AI cover letter
+- `GET /` - List generated cover letters
+
+**Activity & Credits (`/activity`, `/credits` - Protected)**
+- `GET /activity` - User activity history
+- `GET /credits` - Get current credit balance
+
+**Payments (`/payment` - Protected)**
+- `POST /create-order` - Create Razorpay payment order
+- `POST /verify-payment` - Verify payment and add credits
+
+**Referral (`/referral` - Protected)**
+- `GET /` - Get referral data
+- `POST /share` - Share referral code
+
+**Tips (`/tips` - Public)**
+- `GET /` - Fetch general resume writing tips
 
 ## Getting Started 🚀
 ### Prerequisites
@@ -158,11 +147,11 @@ Key route groups under `/api`:
 *   Node.js and npm (or yarn/pnpm/bun)
 *   Firebase Project: Set up a Firebase project for Authentication and Firestore.
 *   Google Cloud Project: Set up a project for Google Generative AI and enable the API.
-*   Environment Variables: Create `.env` files in both the root (frontend) and `backend` directories.
+*   Environment Variables: Create `.env` files in both the `frontend` and `backend` directories.
 
 ### Environment Variables
 
-**Root Directory (Frontend - `.env`):**
+**Frontend Directory (`frontend/.env`):**
 
 ```
 VITE_FIREBASE_API_KEY="your_firebase_api_key"
@@ -171,32 +160,29 @@ VITE_FIREBASE_PROJECT_ID="your_firebase_project_id"
 VITE_FIREBASE_STORAGE_BUCKET="your_firebase_storage_bucket"
 VITE_FIREBASE_MESSAGING_SENDER_ID="your_firebase_messaging_sender_id"
 VITE_FIREBASE_APP_ID="your_firebase_app_id"
-VITE_FIREBASE_MEASUREMENT_ID="your_firebase_measurement_id_optional"
 
-VITE_BACKEND_API_URL="http://localhost:3000/api" # Or your deployed backend URL
+VITE_API_BASE_URL="http://localhost:3001" # Backend URL (no /api suffix — code adds it automatically)
 ```
 
 **Backend Directory (`backend/.env`):**
 
 ```
-PORT=3000
+PORT=3001
 
 # Firebase Admin SDK Configuration (Service Account Key)
 # Option 1: Path to service account JSON file
-# FIREBASE_SERVICE_ACCOUNT_PATH="path/to/your/serviceAccountKey.json"
-# Option 2: Base64 encoded service account JSON string (preferred for some environments)
+# GOOGLE_APPLICATION_CREDENTIALS="path/to/your/serviceAccountKey.json"
+# Option 2: JSON string directly
+# FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
+# Option 3: Base64 encoded service account JSON string (preferred for CI/CD)
 # FIREBASE_SERVICE_ACCOUNT_BASE64="your_base64_encoded_service_account_json"
-# If using Option 2, ensure your backend code can decode this.
-# You'll need to choose one method and ensure the backend Firebase initialization uses it.
-# For simplicity, if you place the serviceAccountKey.json in the backend/src/config folder,
-# you might not need a specific path variable if the code directly references it.
-# However, using an env var for the path or the content is more flexible.
 
-# Google Generative AI API Key
-GOOGLE_API_KEY="your_google_generative_ai_api_key"
+# Google Gemini AI API Key
+GEMINI_API_KEY="your_gemini_api_key"
+GEMINI_MODEL="gemini-2.5-flash"
 
 # CORS Origin (Frontend URL)
-CORS_ORIGIN="http://localhost:5173" # Or your deployed frontend URL
+FRONTEND_URL="http://localhost:8080" # Vite dev server runs on port 8080
 ```
 
 ## Installation 🛠️
@@ -208,8 +194,10 @@ CORS_ORIGIN="http://localhost:5173" # Or your deployed frontend URL
 
 2.  **Install Frontend Dependencies:**
     ```bash
+    cd frontend
     npm install
     # or yarn install, pnpm install, bun install
+    cd ..
     ```
 
 3.  **Install Backend Dependencies:**
@@ -228,23 +216,25 @@ CORS_ORIGIN="http://localhost:5173" # Or your deployed frontend URL
     npm run dev
     # or yarn dev, pnpm dev, bun dev
     ```
-    The backend server will typically start on `http://localhost:3000` (or the port specified in `backend/.env`).
+    The backend server will typically start on `http://localhost:3001` (or the port specified in `backend/.env`).
 
 2.  **Start the Frontend Development Server:**
-    Open another terminal in the root project directory:
+    Open another terminal in the `frontend` directory:
     ```bash
+    cd frontend
     npm run dev
     # or yarn dev, pnpm dev, bun dev
     ```
-    The frontend development server will typically start on `http://localhost:5173`.
+    The frontend development server will typically start on `http://localhost:8080`.
 
-3.  Open your browser and navigate to `http://localhost:5173`.
+3.  Open your browser and navigate to `http://localhost:8080`.
 
 ## Building for Production 📦
 **Frontend:**
 
-From the root directory:
+From the `frontend` directory:
 ```bash
+cd frontend
 npm run build
 ```
 This will create a `dist` folder with the production-ready static assets.
@@ -255,7 +245,7 @@ From the `backend` directory:
 ```bash
 npm run build
 ```
-This will compile TypeScript to JavaScript, typically in a `dist` or `build` folder within the `backend` directory. You can then run the compiled code using `node dist/server.js` (or similar).
+This will compile TypeScript to JavaScript, outputting to the `dist` folder within the `backend` directory. You can then run the compiled code using `node dist/server.js`.
 
 ## Contributing 🤝
 Contributions are welcome! If you'd like to contribute, please follow these steps:
@@ -272,8 +262,8 @@ Please ensure your code adheres to the existing style and that any new features 
 This project is licensed under the MIT License. See the `LICENSE` file for details (if one is created, otherwise assume MIT).
 
 ## Contact 📧
-For questions or support, please reach out to [sushilpatel5113@gmail.com](mailto:sushilpatel5113@gmail.com).
+For questions or support, please reach out to [piyushsenjaliya1999@gmail.com](mailto:piyushsenjaliya1999@gmail.com).
 
 ---
 
-Made with ❤️ by @sushil930.
+Made with ❤️ by the Resuvio-AI team.
