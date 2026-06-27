@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Menu, X, ArrowRight, Sun, Moon } from 'lucide-react';
+import { Menu, X, ArrowRight, Sun, Moon, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SignInPromptModal } from './SignInPromptModal';
@@ -236,6 +236,18 @@ export function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center space-x-3">
+            {/* GitHub Star Button */}
+            <a href="https://github.com/piyushh62/Resuvio-AI" target="_blank" rel="noopener noreferrer">
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden lg:flex items-center gap-2 rounded-full border-border/60 hover:border-yellow-400/50 hover:bg-yellow-400/10 text-muted-foreground hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-300 group"
+              >
+                <Star size={15} className="transition-all duration-300 group-hover:fill-current" />
+                <span className="font-medium">Star on GitHub</span>
+              </Button>
+            </a>
+
             {/* Theme toggle */}
             <Button
               variant="ghost"
