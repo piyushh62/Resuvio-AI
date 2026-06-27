@@ -188,8 +188,8 @@ FRONTEND_URL="http://localhost:8080" # Vite dev server runs on port 8080
 ## Installation 🛠️
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/sushil930/ai-career-forge.git
-    cd ai-career-forge
+    git clone https://github.com/piyushh62/Resuvio-AI.git
+    cd Resuvio-AI
     ```
 
 2.  **Install Frontend Dependencies:**
