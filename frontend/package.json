@@ -95,17 +95,17 @@
     "vite": "^5.4.1",
     "vitest": "^4.1.9"
   },
-  "description": "**URL**: https://lovable.dev/projects/075bbe44-f134-4eb9-8d53-67af476d4538",
+  "description": "Frontend application for Resuvio-AI",
   "main": "eslint.config.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sushil930/ai-career-forge.git"
+    "url": "git+https://github.com/piyushh62/Resuvio-AI.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/sushil930/ai-career-forge/issues"
+    "url": "https://github.com/piyushh62/Resuvio-AI/issues"
   },
-  "homepage": "https://github.com/sushil930/ai-career-forge#readme"
+  "homepage": "https://github.com/piyushh62/Resuvio-AI#readme"
 }
