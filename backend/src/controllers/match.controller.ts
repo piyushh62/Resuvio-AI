@@ -7,23 +7,16 @@ interface AnalysisResult {
     // Add other properties as they become clear from AI response structure
 }
 import admin from 'firebase-admin';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { Resume } from '../models/resume.model'; // To potentially fetch resume by ID
 // Import initialized db from config
 import { db } from '../config/firebase.config';
 import pdfParse from 'pdf-parse'; // For parsing PDF files
 import mammoth from 'mammoth'; // For parsing DOCX files
+import { generateJson } from '../services/ai.service';
 
 interface CustomRequest extends Request {
     user?: admin.auth.DecodedIdToken;
 }
-
-// const db = admin.firestore(); // Removed: Use imported db
-
-// Re-initialize AI client (Consider centralizing this later)
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-// const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Old model
-const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
 
 export const matchResumeToJob = async (req: CustomRequest, res: Response): Promise<void> => {
     try {
@@ -133,44 +126,18 @@ export const matchResumeToJob = async (req: CustomRequest, res: Response): Promi
           JSON Response:
         `;
 
-        // --- Call Gemini API --- 
-        const generationConfig = { temperature: 0.3 }; // Balance between accuracy and slight variation
-        const safetySettings = [
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-        ];
-
-        console.log(`[match]: Sending comparison prompt to Gemini for user ${userId}. Prompt length (approx): ${prompt.length}`);
-        const result = await model.generateContent(
-            prompt,
-            // generationConfig, // Consider re-adding if issues persist with default settings
-            // safetySettings  // Consider re-adding if issues persist with default settings
-        );
-        const response = await result.response;
-        const aiTextResponse = response.text();
-        console.log(`[match]: Received raw comparison response from Gemini for user ${userId}. Length: ${aiTextResponse.length}`);
-
-        // --- Parse Gemini Response --- 
+        // --- Call Gemini API and Parse Response ---
         let analysisResult: AnalysisResult = {};
         try {
-            // Improved JSON extraction: look for JSON block specifically
-            const jsonMatch = aiTextResponse.match(/```json\n(\{.*?\})\n```/s) || aiTextResponse.match(/(\{.*?\})/s);
-            if (jsonMatch && jsonMatch[1]) {
-                analysisResult = JSON.parse(jsonMatch[1]);
-                console.log(`[match]: Successfully parsed JSON from Gemini comparison response.`);
-            } else {
-                console.error(`[match]: Failed to find valid JSON in Gemini comparison response for user ${userId}. Response: ${aiTextResponse}`);
-                throw new Error('Failed to parse AI matching response as JSON.');
+            console.log(`[match]: Sending comparison prompt to Gemini for user ${userId}.`);
+            analysisResult = await generateJson(prompt) as AnalysisResult;
+            console.log(`[match]: Successfully received and parsed JSON from Gemini comparison response.`);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`[match]: Error calling Gemini or parsing response for user ${userId}:`, error.message);
+                res.status(500).json({ message: 'Failed to analyze match or parse response', error: error.message });
+                return;
             }
-        } catch (parseError: unknown) {
-            if (parseError instanceof Error) {
-                console.error(`[match]: Error parsing Gemini comparison response for user ${userId}:`, parseError.message);
-                console.error(`[match]: Raw AI comparison response for user ${userId}: ${aiTextResponse}`);
-                res.status(500).json({ message: 'Failed to parse AI matching response', error: parseError.message, rawResponse: aiTextResponse });
-            }
-            return;
         }
 
         // --- Return Result --- 

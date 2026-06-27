@@ -12,7 +12,7 @@ import NotFound from "../pages/NotFound";
 import { DashboardLayout } from "./dashboard/DashboardLayout";
 import DashboardHome from "../pages/dashboard/DashboardHome";
 import CoverLetterGenerator from "../pages/dashboard/CoverLetterGenerator";
-import MyResumes from "../pages/dashboard/MyResumes";
+import MyDocuments from "../pages/dashboard/MyDocuments";
 import HelpAndTips from "../pages/dashboard/HelpAndTips";
 import ContactPage from "../pages/ContactPage";
 import PrivacyPolicy from "../pages/PrivacyPolicy";
@@ -111,7 +111,7 @@ export const AnimatedRoutes = () => {
             <Route path="builder" element={<PageTransition><ResumeBuilder /></PageTransition>} />
             <Route path="job-match" element={<PageTransition><JobMatch /></PageTransition>} />
             <Route path="cover-letter" element={<PageTransition><CoverLetterGenerator /></PageTransition>} />
-            <Route path="my-resumes" element={<PageTransition><MyResumes /></PageTransition>} />
+            <Route path="my-documents" element={<PageTransition><MyDocuments /></PageTransition>} />
             <Route path="help" element={<PageTransition><HelpAndTips /></PageTransition>} />
             <Route path="referral" element={<PageTransition><ReferralPage /></PageTransition>} />
           </Route>

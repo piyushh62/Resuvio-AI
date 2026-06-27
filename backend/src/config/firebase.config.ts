@@ -30,7 +30,7 @@ try {
     }
 
     // Check if already initialized (useful for hot-reloading environments)
-    if (admin.apps.length === 0) {
+    if (!admin.apps || admin.apps.length === 0) {
         admin.initializeApp({
             credential
         });

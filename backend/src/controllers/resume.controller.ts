@@ -284,4 +284,83 @@ export const getUploadedResumes = async (req: CustomRequest, res: Response): Pro
     }
 };
 
-// TODO: Add other resume controller functions later (getResumeById, getAllResumes) 
+// --- Get Resume By ID Function ---
+export const getResumeById = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+        const userId = req.user.uid;
+        const resumeId = req.params.id as string;
+
+        if (!resumeId) {
+            res.status(400).json({ message: 'Bad Request: Missing resume ID' });
+            return;
+        }
+
+        const resumeRef = db.collection('resumes').doc(resumeId);
+        const resumeDoc = await resumeRef.get();
+
+        if (!resumeDoc.exists) {
+            res.status(404).json({ message: 'Resume not found' });
+            return;
+        }
+
+        const resumeData = resumeDoc.data() as Resume;
+
+        if (resumeData.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not own this resume' });
+            return;
+        }
+
+        res.status(200).json({ resume: { id: resumeDoc.id, ...resumeData } });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error(`[getResumeById]: Error fetching resume ${req.params.id}:`, error.message);
+            res.status(500).json({ message: 'Internal server error fetching resume', error: error.message });
+        }
+    }
+};
+
+// --- Delete Resume Function ---
+export const deleteResume = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+        const userId = req.user.uid;
+        const resumeId = req.params.id as string;
+
+        if (!resumeId) {
+            res.status(400).json({ message: 'Bad Request: Missing resume ID' });
+            return;
+        }
+
+        const resumeRef = db.collection('resumes').doc(resumeId);
+        const resumeDoc = await resumeRef.get();
+
+        if (!resumeDoc.exists) {
+            res.status(404).json({ message: 'Resume not found' });
+            return;
+        }
+
+        const resumeData = resumeDoc.data() as Resume;
+
+        if (resumeData.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not own this resume' });
+            return;
+        }
+
+        await resumeRef.delete();
+        console.log(`[deleteResume]: Resume ${resumeId} deleted by user ${userId}`);
+
+        res.status(200).json({ message: 'Resume deleted successfully' });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error(`[deleteResume]: Error deleting resume ${req.params.id}:`, error.message);
+            res.status(500).json({ message: 'Internal server error deleting resume', error: error.message });
+        }
+    }
+};

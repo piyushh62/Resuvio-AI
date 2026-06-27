@@ -23,7 +23,6 @@ describe('GET / - Basic Server Test', () => {
                 credential: {
                     cert: jest.fn(),
                 },
-                // Return mock objects for chained calls if any occur during import
                 firestore: jest.fn(() => ({
                     collection: jest.fn(() => ({ doc: jest.fn(), add: jest.fn() })),
                     FieldValue: { serverTimestamp: jest.fn() }
@@ -32,6 +31,10 @@ describe('GET / - Basic Server Test', () => {
                     createUser: jest.fn(),
                     verifyIdToken: jest.fn(),
                 }))
+            }));
+            
+            jest.mock('puppeteer', () => ({
+                launch: jest.fn()
             }));
 
             // Ensure dotenv runs for potential env vars needed by server during import

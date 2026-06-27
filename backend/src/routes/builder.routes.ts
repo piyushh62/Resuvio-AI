@@ -11,8 +11,11 @@ import {
     getWorkspaceResume,
     getWorkspaceResumes,
     parseResumeUploadForWorkspace,
+    parseResumeTextForWorkspace,
     saveWorkspaceResume,
+    analyzeWorkspaceResume,
 } from '../controllers/builder.controller';
+import { exportResume } from '../controllers/export.controller';
 
 const router = Router();
 
@@ -66,6 +69,13 @@ router.post(
     parseResumeUploadForWorkspace
 );
 
+// POST /api/builder/parse-text - Parse raw text and prefill workspace data
+router.post(
+    '/parse-text',
+    authenticateToken,
+    parseResumeTextForWorkspace
+);
+
 // GET /api/builder/download/:generatedResumeId - Download a generated resume as PDF
 router.get(
     '/download/:generatedResumeId',
@@ -85,6 +95,20 @@ router.post(
     '/workspace/:resumeId/duplicate',
     authenticateToken,
     duplicateWorkspaceResume
+);
+
+// POST /api/builder/export - Export a resume workspace as PDF or DOCX
+router.post(
+    '/export',
+    authenticateToken,
+    exportResume
+);
+
+// POST /api/builder/workspace/:resumeId/analyze - Analyze a workspace ATS score
+router.post(
+    '/workspace/:resumeId/analyze',
+    authenticateToken,
+    analyzeWorkspaceResume
 );
 
 export default router;

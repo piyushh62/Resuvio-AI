@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth.middleware';
 // Import controller and multer config
-import { uploadResume, analyzeResume, getUploadedResumes } from '../controllers/resume.controller';
+import { uploadResume, analyzeResume, getUploadedResumes, getResumeById, deleteResume } from '../controllers/resume.controller';
 import upload from '../config/multer.config'; // Import the configured multer instance
 
 const router = Router();
@@ -28,6 +28,17 @@ router.post(
     analyzeResume // Call the analysis controller function
 );
 
-// TODO: Add other resume routes later (e.g., GET /api/resumes/:id)
+// GET /api/resumes/:id - Get a specific uploaded resume
+router.get(
+    '/:id',
+    authenticateToken,
+    getResumeById
+);
 
+// DELETE /api/resumes/:id - Delete a specific uploaded resume
+router.delete(
+    '/:id',
+    authenticateToken,
+    deleteResume
+);
 export default router; 

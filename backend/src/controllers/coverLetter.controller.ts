@@ -11,12 +11,9 @@ interface ApiError extends Error {
 import admin from 'firebase-admin';
 import { db } from '../config/firebase.config'; // Import Firestore instance
 import { Resume } from '../models/resume.model'; // Import Resume interface
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai'; // Import Gemini AI
+import { CoverLetter } from '../models/coverLetter.model'; // Import CoverLetter interface
 
-// Initialize Google Generative AI
-// Ensure GEMINI_API_KEY is set in your environment variables
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
+import { generateContent } from '../services/ai.service';
 
 interface CustomRequest extends Request {
     user?: admin.auth.DecodedIdToken;
@@ -31,19 +28,19 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
     }
     const userId = req.user.uid;
 
-    const { 
+    const {
         selectedResume, // This is the resume ID
-        jobDescription, 
-        companyName, 
-        roleName, 
-        selectedTemplate 
+        jobDescription,
+        companyName,
+        roleName,
+        selectedTemplate
     } = req.body;
 
     if (!selectedResume || !jobDescription) {
         res.status(400).json({ message: 'Bad Request: Missing selected resume ID or job description.' });
         return;
     }
-    
+
     console.log(`[CoverLetterGen] User: ${userId} attempting to generate cover letter.`);
     console.log(`[CoverLetterGen] Using Resume ID: ${selectedResume}, Company: ${companyName}, Role: ${roleName}, Template: ${selectedTemplate}`);
 
@@ -109,41 +106,37 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
           
           **Generated Cover Letter Text Only:**
         `;
-        
+
         console.log(`[CoverLetterGen] Prompt constructed for Gemini. Template: ${selectedTemplate}`);
-        
+
         // 3. Call AI service to generate the cover letter
-        const generationConfig = {
-            temperature: 0.6, // Slightly more creative than resume analysis
-            topK: 1,
-            topP: 0.95,
-            maxOutputTokens: 3072, // Allow for longer cover letter text
-        };
-        const safetySettings = [
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-        ];
-        
-        const result = await model.generateContent(
-            prompt
-            // Pass config if needed: { generationConfig, safetySettings }
-        );
-        const response = await result.response;
-        const generatedCoverLetter = response.text();
-        
+        const generatedCoverLetter = await generateContent(prompt);
+
         if (!generatedCoverLetter || generatedCoverLetter.trim() === '') {
             console.error(`[CoverLetterGen] Gemini returned empty response for user ${userId}, resume ${selectedResume}`);
             throw new Error('AI generation resulted in an empty cover letter.');
         }
-        
+
         console.log(`[CoverLetterGen] Received cover letter from Gemini. Length: ${generatedCoverLetter.length}`);
+
+        // 4. Save the generated letter
+        const newCoverLetterRef = db.collection('coverLetters').doc();
+        const coverLetterData: CoverLetter = {
+            userId,
+            resumeId: selectedResume,
+            jobRole: roleName || '',
+            companyName: companyName || '',
+            content: generatedCoverLetter.trim(),
+            createdAt: admin.firestore.Timestamp.now(),
+            updatedAt: admin.firestore.Timestamp.now()
+        };
+        await newCoverLetterRef.set(coverLetterData);
         
-        // TODO: 4. (Optional) Save the generated letter
-        
+        console.log(`[CoverLetterGen] Saved cover letter to Firestore with ID: ${newCoverLetterRef.id}`);
+
         res.status(200).json({
             message: "Cover letter generated successfully",
+            coverLetterId: newCoverLetterRef.id,
             generatedCoverLetter: generatedCoverLetter.trim(), // Trim whitespace from AI response
         });
 
@@ -168,4 +161,70 @@ export const generateCoverLetterController = async (req: CustomRequest, res: Res
             res.status(500).json({ message: errorMessage });
         }
     }
-}; 
+};
+
+export const getCoverLetters = async (req: CustomRequest, res: Response): Promise<void> => {
+    if (!req.user || !req.user.uid) {
+        res.status(401).json({ message: 'Unauthorized: User not authenticated or UID missing.' });
+        return;
+    }
+    const userId = req.user.uid;
+
+    try {
+        const coverLettersSnapshot = await db.collection('coverLetters')
+            .where('userId', '==', userId)
+            .get();
+
+        const coverLetters = coverLettersSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate().toISOString(),
+                updatedAt: data.updatedAt?.toDate().toISOString()
+            };
+        });
+        
+        // Sort in memory by createdAt descending to avoid Firestore composite index requirement
+        coverLetters.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+        });
+
+        res.status(200).json({ coverLetters });
+    } catch (error) {
+        console.error(`[CoverLetterGen] Error fetching cover letters for user ${userId}:`, error);
+        res.status(500).json({ message: 'Failed to fetch cover letters.' });
+    }
+};
+
+export const deleteCoverLetter = async (req: CustomRequest, res: Response): Promise<void> => {
+    if (!req.user || !req.user.uid) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+    }
+    const userId = req.user.uid;
+    const { id } = req.params;
+
+    try {
+        const coverLetterRef = db.collection('coverLetters').doc(id as string);
+        const coverLetterDoc = await coverLetterRef.get();
+
+        if (!coverLetterDoc.exists) {
+            res.status(404).json({ message: 'Cover letter not found' });
+            return;
+        }
+
+        if (coverLetterDoc.data()?.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden' });
+            return;
+        }
+
+        await coverLetterRef.delete();
+        res.status(200).json({ message: 'Cover letter deleted successfully' });
+    } catch (error) {
+        console.error(`[CoverLetterGen] Error deleting cover letter ${id} for user ${userId}:`, error);
+        res.status(500).json({ message: 'Failed to delete cover letter' });
+    }
+};

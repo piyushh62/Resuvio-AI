@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +18,11 @@ interface MatchAnalysisResult {
   suggestions: string[];
 }
 
+interface UploadedResumeSummary {
+  id: string;
+  originalFilename: string;
+}
+
 type ApiErrorLike = {
   response?: {
     data?: {
@@ -29,6 +35,8 @@ type ApiErrorLike = {
 
 const JobMatchPage = () => {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumes, setResumes] = useState<UploadedResumeSummary[]>([]);
+  const [selectedResumeId, setSelectedResumeId] = useState("");
   const [isResumeDragActive, setIsResumeDragActive] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -37,8 +45,23 @@ const JobMatchPage = () => {
   const [showResumeGuide, setShowResumeGuide] = useState(false);
   const [showJobGuide, setShowJobGuide] = useState(false);
 
+  useEffect(() => {
+    const fetchResumes = async () => {
+      try {
+        const response = await apiClient.get('/api/resumes');
+        if (response.data && Array.isArray(response.data.resumes)) {
+          setResumes(response.data.resumes);
+        }
+      } catch (err) {
+        console.error("Error fetching resumes:", err);
+      }
+    };
+    fetchResumes();
+  }, []);
+
   const handleResumeFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setResumeFile(null); // Reset previous file
+    setSelectedResumeId(""); // Clear selected existing resume
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       const fileType = selectedFile.type;
@@ -72,6 +95,7 @@ const JobMatchPage = () => {
   const handleResumeDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsResumeDragActive(false);
+    setSelectedResumeId(""); // Clear selected existing resume
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       const fileType = droppedFile.type;
@@ -87,9 +111,14 @@ const JobMatchPage = () => {
     }
   };
 
+  const handleResumeSelect = (value: string) => {
+    setSelectedResumeId(value);
+    clearResumeFile();
+  };
+
   const handleMatch = async () => {
-    if (!resumeFile || !jobDescription.trim()) {
-      toast.error("Please upload your resume and enter the job description");
+    if ((!resumeFile && !selectedResumeId) || !jobDescription.trim()) {
+      toast.error("Please provide a resume and enter the job description");
       return;
     }
 
@@ -97,7 +126,11 @@ const JobMatchPage = () => {
     setMatchResult(null);
 
     const formData = new FormData();
-    formData.append('resumeFile', resumeFile);
+    if (resumeFile) {
+      formData.append('resumeFile', resumeFile);
+    } else if (selectedResumeId) {
+      formData.append('resumeId', selectedResumeId);
+    }
     formData.append('jobDescription', jobDescription);
 
     try {
@@ -181,10 +214,10 @@ const JobMatchPage = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 sm:mb-10 md:mb-14">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-foreground font-heading tracking-tight">
-              Resume to Job Match
+              AI Job Match Analysis
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2 leading-relaxed">
-              Find out how well your resume aligns with specific job requirements and get tailored suggestions
+              Let our AI analyze how well your resume aligns with specific job requirements and get tailored suggestions
             </p>
           </div>
 
@@ -219,6 +252,32 @@ const JobMatchPage = () => {
                 </div>
               )}
               <CardContent className="p-6">
+                {resumes.length > 0 && (
+                  <div className="mb-6">
+                    <label className="text-sm font-medium mb-2 block text-foreground">Select Existing Resume</label>
+                    <Select value={selectedResumeId} onValueChange={handleResumeSelect} disabled={isAnalyzing}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose a previously uploaded resume" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {resumes.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            {r.originalFilename}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <div className="relative mt-6 mb-2">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border/50" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">Or upload a new one</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div 
                   className={cn(
                     "flex flex-col items-center justify-center py-6 sm:py-8 md:py-12 border-2 border-dashed rounded-xl transition-all duration-300 ease-in-out relative overflow-hidden",
@@ -326,18 +385,18 @@ const JobMatchPage = () => {
           <div className="flex justify-center mb-10 md:mb-16">
             <Button
               onClick={handleMatch}
-              disabled={isAnalyzing || !resumeFile || !jobDescription.trim()}
+              disabled={isAnalyzing || (!resumeFile && !selectedResumeId) || !jobDescription.trim()}
               size="lg"
               className="bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white py-6 px-10 rounded-xl text-lg font-semibold transition-all duration-300 hover:scale-[1.02]"
             >
               {isAnalyzing ? (
                 <>
                   <CircleDashed className="mr-3 h-6 w-6 animate-spin" />
-                  Analyzing match...
+                  AI is analyzing match...
                 </>
               ) : (
                 <>
-                  Analyze Match
+                  Analyze Match with AI
                   <ArrowRight className="ml-3 h-6 w-6" />
                 </>
               )}
@@ -351,7 +410,7 @@ const JobMatchPage = () => {
                 <CardHeader className="pb-2 border-b border-border/40 bg-secondary/30">
                   <CardTitle className="flex items-center gap-2 text-foreground font-heading">
                     <Target className="h-5 w-5 text-violet-500" />
-                    Job Match Results
+                    AI Job Match Results
                   </CardTitle>
                   <CardDescription className="text-muted-foreground text-base mt-1">
                     How well your resume aligns with the job requirements

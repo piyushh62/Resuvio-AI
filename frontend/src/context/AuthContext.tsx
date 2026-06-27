@@ -70,9 +70,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Set up token refresh interval (e.g., every 55 minutes - Firebase tokens expire after 1 hour)
     useEffect(() => {
         if (!user) return; // Only set up refresh for authenticated users
-        
+
         const REFRESH_INTERVAL = 55 * 60 * 1000; // 55 minutes in milliseconds
-        
+
         const intervalId = setInterval(async () => {
             try {
                 console.log('[AuthContext] Refreshing Firebase ID token');
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 console.error('[AuthContext] Failed to refresh token:', error);
             }
         }, REFRESH_INTERVAL);
-        
+
         return () => clearInterval(intervalId);
     }, [user]);
 

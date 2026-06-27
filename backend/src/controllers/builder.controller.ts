@@ -1,6 +1,4 @@
 import { Request, Response } from 'express';
-// import admin from 'firebase-admin'; // Keep for FieldValue
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { GeneratedResume, ResumeInputData } from '../models/generated-resume.model';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import pdfParse from 'pdf-parse';
@@ -8,6 +6,7 @@ import mammoth from 'mammoth';
 // Import initialized db from config
 import { db } from '../config/firebase.config';
 import admin from 'firebase-admin'; // Still needed for admin.firestore.FieldValue
+import { generateContent, generateJson } from '../services/ai.service';
 
 interface CustomRequest extends Request {
     user?: admin.auth.DecodedIdToken;
@@ -21,20 +20,7 @@ interface WorkspaceResumeDraft {
     updatedAt: admin.firestore.FieldValue | admin.firestore.Timestamp;
 }
 
-const parseJsonFromText = (text: string): unknown => {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-        throw new Error('AI response did not contain a JSON object.');
-    }
-    return JSON.parse(jsonMatch[0]);
-};
-
-// const db = admin.firestore(); // Removed: Use imported db
-
-// Re-initialize AI client (Consider centralizing this later)
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-// const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Old model
-const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" });
+// Removed AI client init and parseJsonFromText, now using ai.service.ts
 
 // Helper function to format input data for the prompt (optional but good practice)
 const formatInputForPrompt = (data: ResumeInputData): string => {
@@ -85,22 +71,8 @@ export const generateResume = async (req: CustomRequest, res: Response): Promise
           Generated Resume Text:
         `;
 
-        // --- Call Gemini API --- 
-        const generationConfig = { temperature: 0.5 }; // Allow some creativity
-        const safetySettings = [
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-        ];
-
         console.log(`[builder]: Sending prompt to Gemini for user: ${userId}`);
-        const result = await model.generateContent(
-            prompt
-            // { generationConfig, safetySettings } // Consider enabling these
-        );
-        const response = await result.response;
-        const generatedText = response.text();
+        const generatedText = await generateContent(prompt);
         console.log(`[builder]: Received generated text from Gemini for user: ${userId}`);
 
         // --- Save to Firestore --- 
@@ -299,7 +271,7 @@ export const getGeneratedResumes = async (req: CustomRequest, res: Response): Pr
             }
         }
     }
-}; 
+};
 
 export const saveWorkspaceResume = async (req: CustomRequest, res: Response): Promise<void> => {
     try {
@@ -563,9 +535,8 @@ Context:
 ${safeContext || '(none)'}
         `.trim();
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const suggestion = response.text().trim();
+        const responseText = await generateContent(prompt);
+        const suggestion = responseText.trim();
 
         res.status(200).json({ suggestion });
     } catch (error: unknown) {
@@ -663,9 +634,7 @@ ${parsedText.slice(0, 18000)}
 --- END ---
         `.trim();
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const workspaceData = parseJsonFromText(response.text());
+        const workspaceData = await generateJson(prompt);
 
         res.status(200).json({
             message: 'Resume parsed successfully',
@@ -676,6 +645,288 @@ ${parsedText.slice(0, 18000)}
         if (error instanceof Error) {
             console.error('[workspaceParseUpload]: Error parsing uploaded resume:', error.message);
             res.status(500).json({ message: 'Internal server error parsing uploaded resume', error: error.message });
+        }
+    }
+};
+
+export const parseResumeTextForWorkspace = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        const { parsedText, sourceFilename } = req.body;
+
+        if (!parsedText) {
+            res.status(400).json({ message: 'Bad Request: Missing parsedText' });
+            return;
+        }
+
+        const prompt = `
+Convert the resume text into this exact JSON shape for a resume builder.
+Return only valid JSON. Do not include markdown.
+Use empty strings or empty arrays where data is missing.
+
+{
+  "title": "Untitled Resume",
+  "templateId": "modern",
+  "stylePreset": "mono",
+  "layoutPreset": "steady",
+  "sections": ["personal", "summary", "experience", "education", "skills"],
+  "personal": {
+    "name": "",
+    "headline": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "links": []
+  },
+  "summary": "",
+  "experience": [
+    {
+      "jobTitle": "",
+      "company": "",
+      "employmentType": "",
+      "location": "",
+      "dates": "",
+      "description": ""
+    }
+  ],
+  "education": [
+    {
+      "degree": "",
+      "institution": "",
+      "honors": "",
+      "dates": "",
+      "gpa": "",
+      "description": ""
+    }
+  ],
+  "skills": [
+    {
+      "category": "",
+      "items": ""
+    }
+  ],
+  "projects": [],
+  "certifications": [],
+  "extras": {},
+  "targetJobDescription": ""
+}
+
+Resume text:
+--- START ---
+${String(parsedText).slice(0, 18000)}
+--- END ---
+        `.trim();
+
+        const workspaceData = await generateJson(prompt);
+
+        res.status(200).json({
+            message: 'Resume text parsed successfully',
+            workspaceData,
+            sourceFilename: sourceFilename || 'Imported Resume',
+        });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[workspaceParseText]: Error parsing resume text:', error.message);
+            res.status(500).json({ message: 'Internal server error parsing resume text', error: error.message });
+        }
+    }
+};
+
+export const uploadAndCreateWorkspace = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+
+        const userId = req.user.uid;
+
+        if (!req.file) {
+            res.status(400).json({ message: 'Bad Request: No file uploaded' });
+            return;
+        }
+
+        const dataBuffer = req.file.buffer;
+        const parsedData = await pdfParse(dataBuffer);
+        const parsedText = parsedData.text;
+        const originalFilename = req.file.originalname;
+        const title = originalFilename.replace(/\.[^.]+$/, "") || "Imported Resume";
+
+        const prompt = `
+Convert the resume text into this exact JSON shape for a resume builder.
+Return only valid JSON. Do not include markdown.
+Use empty strings or empty arrays where data is missing.
+
+{
+  "title": "${title}",
+  "templateId": "modern",
+  "stylePreset": "mono",
+  "layoutPreset": "steady",
+  "sections": ["personal", "summary", "experience", "education", "skills"],
+  "personal": {
+    "name": "",
+    "headline": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "links": []
+  },
+  "summary": "",
+  "experience": [
+    {
+      "jobTitle": "",
+      "company": "",
+      "employmentType": "",
+      "location": "",
+      "dates": "",
+      "description": ""
+    }
+  ],
+  "education": [
+    {
+      "degree": "",
+      "institution": "",
+      "honors": "",
+      "dates": "",
+      "gpa": "",
+      "description": ""
+    }
+  ],
+  "skills": [
+    {
+      "category": "",
+      "items": ""
+    }
+  ],
+  "projects": [],
+  "certifications": [],
+  "extras": {},
+  "targetJobDescription": ""
+}
+
+Resume text:
+--- START ---
+${parsedText.slice(0, 18000)}
+--- END ---
+        `.trim();
+
+        const workspaceData = await generateJson(prompt) as any;
+
+        // Calculate candidateName and headline
+        const candidateName = workspaceData.personal?.name || '';
+        const headline = workspaceData.personal?.headline || '';
+        const sectionCount = Object.keys(workspaceData).filter(k => Array.isArray(workspaceData[k]) ? workspaceData[k].length > 0 : !!workspaceData[k]).length;
+
+        // Save to DB immediately
+        const resumeRef = db.collection('resumeWorkspaces').doc();
+        const now = admin.firestore.FieldValue.serverTimestamp();
+
+        const newWorkspace = {
+            userId,
+            title: title,
+            workspaceData: workspaceData,
+            createdAt: now,
+            updatedAt: now,
+            templateId: workspaceData.templateId || 'modern',
+            candidateName,
+            headline,
+            sectionCount,
+            originalFilename
+        };
+
+        await resumeRef.set(newWorkspace);
+
+        res.status(200).json({
+            message: 'Resume uploaded and workspace created successfully',
+            resumeId: resumeRef.id,
+            workspaceData,
+            sourceFilename: originalFilename,
+        });
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('[uploadAndCreateWorkspace]: Error creating workspace from upload:', error.message);
+            res.status(500).json({ message: 'Internal server error creating workspace', error: error.message });
+        }
+    }
+};
+
+export const analyzeWorkspaceResume = async (req: CustomRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+        const userId = req.user.uid;
+        const resumeId = req.params.resumeId as string;
+
+        if (!resumeId) {
+            res.status(400).json({ message: 'Bad Request: Missing resumeId parameter' });
+            return;
+        }
+
+        const docRef = db.collection('resumeWorkspaces').doc(resumeId);
+        const docSnap = await docRef.get();
+
+        if (!docSnap.exists) {
+            res.status(404).json({ message: 'Workspace not found' });
+            return;
+        }
+
+        const data = docSnap.data() as WorkspaceResumeDraft;
+
+        if (data.userId !== userId) {
+            res.status(403).json({ message: 'Forbidden: You do not own this workspace' });
+            return;
+        }
+
+        console.log(`[analyzeWorkspace]: Starting ATS analysis for workspace: ${resumeId}, User: ${userId}`);
+
+        const resumeText = JSON.stringify(data.workspaceData, null, 2);
+
+        const prompt = `
+          Analyze the following resume data and provide feedback. Structure your response as a JSON object adhering STRICTLY to the following format:
+          {
+            "overallScore": <integer score 0-100>,
+            "categoryScores": {
+              "formatting": <integer score 0-100 for layout, readability, consistency>,
+              "content": <integer score 0-100 for clarity, conciseness, grammar, spelling>,
+              "keywords": <integer score 0-100 for relevance of skills and terms to common job descriptions>,
+              "impact": <integer score 0-100 for showcasing achievements and quantifiable results>
+            },
+            "suggestions": [<array of specific, actionable suggestion strings>],
+            "strengths": [<array of specific strength strings>]
+          }
+
+          Resume Data:
+          --- START RESUME ---
+          ${resumeText}
+          --- END RESUME ---
+
+          Ensure your entire response is ONLY the JSON object requested, without any introductory text, code block markers (\`\`\`), or explanations.
+        `;
+
+        const analysisResult = await generateJson(prompt);
+
+        // Save analysis to the workspace document so they can see their score history
+        await docRef.update({
+            analysis: {
+                ...(analysisResult as object),
+                analysisTimestamp: admin.firestore.FieldValue.serverTimestamp()
+            }
+        });
+
+        console.log(`[analyzeWorkspace]: Analysis results updated in Firestore for workspace: ${resumeId}`);
+
+        res.status(200).json({ message: 'Workspace analyzed successfully', analysis: analysisResult });
+
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error(`[analyzeWorkspace]: Error analyzing workspace ${req.params.resumeId}:`, error.message);
+            res.status(500).json({ message: 'Internal server error analyzing workspace', error: error.message });
         }
     }
 };

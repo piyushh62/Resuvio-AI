@@ -1,0 +1,150 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.matchResumeToJob = void 0;
+// Import initialized db from config
+const firebase_config_1 = require("../config/firebase.config");
+const pdf_parse_1 = __importDefault(require("pdf-parse")); // For parsing PDF files
+const mammoth_1 = __importDefault(require("mammoth")); // For parsing DOCX files
+const ai_service_1 = require("../services/ai.service");
+const matchResumeToJob = async (req, res) => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized: User not authenticated' });
+            return;
+        }
+        const userId = req.user.uid;
+        // Destructure jobDescription from req.body. resumeId and resumeText are no longer primary inputs from frontend.
+        const { jobDescription, resumeId, resumeText: fallbackResumeText } = req.body;
+        if (!jobDescription) {
+            res.status(400).json({ message: 'Bad Request: Missing jobDescription' });
+            return;
+        }
+        let currentResumeText = '';
+        let resumeSourceDescription = 'Unknown';
+        // --- Get Resume Text --- 
+        if (req.file) {
+            console.log(`[match]: Processing uploaded resume file for user ${userId}: ${req.file.originalname}`);
+            resumeSourceDescription = `Uploaded file: ${req.file.originalname}`;
+            try {
+                if (req.file.mimetype === "application/pdf") {
+                    const data = await (0, pdf_parse_1.default)(req.file.buffer);
+                    currentResumeText = data.text;
+                }
+                else if (req.file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+                    const { value } = await mammoth_1.default.extractRawText({ buffer: req.file.buffer });
+                    currentResumeText = value;
+                }
+                else {
+                    // This should be caught by multer's fileFilter, but handle defensively
+                    res.status(400).json({ message: 'Unsupported file type provided.' });
+                    return;
+                }
+                if (!currentResumeText || !currentResumeText.trim()) {
+                    console.error(`[match]: Failed to extract text from uploaded file ${req.file.originalname} for user ${userId}. Mimetype: ${req.file.mimetype}`);
+                    res.status(400).json({ message: 'Could not extract text from the uploaded resume file. It might be empty or corrupted.' });
+                    return;
+                }
+                console.log(`[match]: Successfully extracted text from ${req.file.originalname} for user ${userId}`);
+            }
+            catch (extractionError) {
+                if (extractionError instanceof Error) {
+                    console.error(`[match]: Error extracting text from file ${req.file.originalname} for user ${userId}:`, extractionError.message);
+                    res.status(500).json({ message: 'Error processing uploaded resume file.', error: extractionError.message });
+                }
+                return;
+            }
+        }
+        else if (resumeId) { // Fallback if frontend or API caller still uses resumeId
+            console.log(`[match]: Fetching resume by ID ${resumeId} for user ${userId} (fallback)`);
+            resumeSourceDescription = `ID: ${resumeId}`;
+            const resumeRef = firebase_config_1.db.collection('resumes').doc(resumeId);
+            const resumeDoc = await resumeRef.get();
+            if (!resumeDoc.exists) {
+                res.status(404).json({ message: 'Resume not found for the given ID' });
+                return;
+            }
+            const resumeData = resumeDoc.data();
+            if (resumeData.userId !== userId) {
+                res.status(403).json({ message: 'Forbidden: You do not own this resume' });
+                return;
+            }
+            if (!resumeData.parsedText) {
+                res.status(400).json({ message: 'Cannot match: Resume text is missing or empty for the given ID' });
+                return;
+            }
+            currentResumeText = resumeData.parsedText;
+            console.log(`[match]: Fetched resume text for ${resumeId} (fallback)`);
+        }
+        else if (fallbackResumeText) { // Fallback for direct text submission
+            console.log(`[match]: Using provided resume text for user ${userId} (fallback)`);
+            resumeSourceDescription = 'Direct Text (fallback)';
+            currentResumeText = fallbackResumeText;
+        }
+        else {
+            // No resume source provided
+            res.status(400).json({ message: 'Bad Request: No resume source provided (file, ID, or text).' });
+            return;
+        }
+        if (!currentResumeText.trim()) {
+            res.status(400).json({ message: 'Resume text is empty. Cannot perform match.' });
+            return;
+        }
+        console.log(`[match]: Starting comparison for user ${userId}. Resume source: ${resumeSourceDescription}`);
+        // --- Prepare Prompt for Gemini --- 
+        const prompt = `
+          Analyze the alignment between the following Resume Text and Job Description.
+          Provide your response as a JSON object with the following keys:
+          - "matchScore": An integer score from 0 to 100 representing how well the resume matches the job description requirements.
+          - "missingKeywords": An array of important skills or keywords found in the Job Description but missing or poorly represented in the Resume Text.
+          - "matchingKeywords": An array of important skills or keywords found in both the Job Description and the Resume Text.
+          - "suggestions": An array of specific, actionable suggestions (as strings) for how to tailor the Resume Text to better fit the Job Description.
+
+          Resume Text:
+          --- START RESUME ---
+          ${currentResumeText}
+          --- END RESUME ---
+
+          Job Description:
+          --- START JOB DESCRIPTION ---
+          ${jobDescription}
+          --- END JOB DESCRIPTION ---
+
+          JSON Response:
+        `;
+        // --- Call Gemini API and Parse Response ---
+        let analysisResult = {};
+        try {
+            console.log(`[match]: Sending comparison prompt to Gemini for user ${userId}.`);
+            analysisResult = await (0, ai_service_1.generateJson)(prompt);
+            console.log(`[match]: Successfully received and parsed JSON from Gemini comparison response.`);
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error(`[match]: Error calling Gemini or parsing response for user ${userId}:`, error.message);
+                res.status(500).json({ message: 'Failed to analyze match or parse response', error: error.message });
+                return;
+            }
+        }
+        // --- Return Result --- 
+        res.status(200).json({ message: 'Resume matched to job description successfully', analysis: analysisResult });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.error("[match]: Resume-Job matching error for user", req.user?.uid, ":", error.message);
+            const err = error;
+            if (err.message && err.message.includes('GOOGLE_API_KEY_INVALID')) {
+                res.status(500).json({ message: 'Internal Server Error: Invalid Gemini API Key configured.' });
+            }
+            else if (err.code === 'permission-denied' || (err.status && err.status === 'PERMISSION_DENIED')) {
+                res.status(500).json({ message: 'Internal Server Error: Firebase/Google API permission issue.' });
+            }
+            else {
+                res.status(500).json({ message: 'Internal server error during matching', error: err.message });
+            }
+        }
+    }
+};
+exports.matchResumeToJob = matchResumeToJob;

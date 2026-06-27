@@ -29,8 +29,8 @@ app.use(cors({
     origin: process.env.FRONTEND_URL, // Allow requests from the frontend URL specified in .env
     credentials: true, // Optional: If you need to send cookies or authorization headers
 }));
-app.use(express.json()); // Parse JSON request bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded request bodies
+app.use(express.json({ limit: '50mb' })); // Parse JSON request bodies (increased limit for large HTML payloads)
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Parse URL-encoded request bodies
 
 // API Routes
 app.use('/api/auth', authRoutes); // Use auth routes under /api/auth
@@ -55,4 +55,4 @@ if (require.main === module) {
     });
 }
 
-export default app; // Export the app instance for testing 
+export default app; // Export the app instance for testing

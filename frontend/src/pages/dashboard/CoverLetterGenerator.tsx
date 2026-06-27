@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  CircleDashed, 
-  Copy, 
-  Download, 
-  FileText, 
-  Sparkles, 
-  Send, 
-  CheckCircle2, 
-  Edit3, 
+import {
+  CircleDashed,
+  Copy,
+  Download,
+  FileText,
+  Sparkles,
+  Send,
+  CheckCircle2,
+  Edit3,
   ArrowRight,
   User,
   Briefcase,
@@ -60,6 +61,7 @@ const tones = [
 ];
 
 export default function CoverLetterGenerator() {
+  const location = useLocation();
   const [resumes, setResumes] = useState([]);
   const [selectedResume, setSelectedResume] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -73,6 +75,7 @@ export default function CoverLetterGenerator() {
   const [editorMode, setEditorMode] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [error, setError] = useState(null);
+  const [isViewingSaved, setIsViewingSaved] = useState(false);
 
   // Fetch user's resumes on component mount
   useEffect(() => {
@@ -98,7 +101,7 @@ export default function CoverLetterGenerator() {
   // Simulated generation progress
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (isGenerating) {
       interval = setInterval(() => {
         setGenerationProgress(prev => {
@@ -124,6 +127,22 @@ export default function CoverLetterGenerator() {
     }
   }, [activeTab, coverLetter]);
 
+  // Handle initialization from route state (when clicking View/Edit from My Documents)
+  useEffect(() => {
+    if (location.state?.coverLetter) {
+      const cl = location.state.coverLetter;
+      setCoverLetter(cl.content);
+      setRoleName(cl.jobRole || "");
+      setCompanyName(cl.companyName || "");
+      setActiveTab("view");
+      setIsViewingSaved(true);
+      toast.info("Cover letter loaded for viewing/editing");
+      
+      // Clear state so a refresh doesn't reload it if they want to start fresh
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state]);
+
   // Function to generate cover letter using API
   const handleGenerate = async () => {
     if (!selectedResume || !jobDescription) {
@@ -135,7 +154,7 @@ export default function CoverLetterGenerator() {
     setActiveTab("create");
     setError(null);
     setGenerationProgress(10); // Start progress indicator
-    
+
     try {
       // Prepare the request payload
       const payload = {
@@ -146,10 +165,10 @@ export default function CoverLetterGenerator() {
         selectedTemplate,
         tone: selectedTone
       };
-      
+
       // Call the backend API
       const response = await apiClient.post('/api/cover-letter/generate', payload);
-      
+
       if (response.data && response.data.generatedCoverLetter) {
         setCoverLetter(response.data.generatedCoverLetter);
         setActiveTab("view");
@@ -185,7 +204,7 @@ export default function CoverLetterGenerator() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-8"
       initial="hidden"
       animate="visible"
@@ -194,10 +213,10 @@ export default function CoverLetterGenerator() {
       <motion.div variants={fadeIn}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent font-heading tracking-tight">Cover Letter Generator</h2>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent font-heading tracking-tight">AI Cover Letter Generator</h2>
             <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">Create customized cover letters for your job applications with AI assistance</p>
           </div>
-          
+
           <Badge variant="outline" className="px-4 py-1.5 text-sm font-medium border-violet-500/20 bg-violet-500/10 text-violet-600 self-start md:self-center">
             <Sparkles className="h-4 w-4 mr-1.5 text-violet-500" />
             AI Powered
@@ -207,7 +226,7 @@ export default function CoverLetterGenerator() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-8 bg-secondary/50 p-1">
-          <TabsTrigger value="create" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md py-2.5">
+          <TabsTrigger value="create" disabled={isViewingSaved} className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-md py-2.5">
             <FileEdit className="h-4 w-4 mr-2" />
             Create Letter
           </TabsTrigger>
@@ -218,7 +237,7 @@ export default function CoverLetterGenerator() {
         </TabsList>
 
         <TabsContent value="create">
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8"
             variants={fadeIn}
           >
@@ -261,7 +280,7 @@ export default function CoverLetterGenerator() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="company-name" className="text-foreground font-medium">Company Name</Label>
-                      <Input 
+                      <Input
                         id="company-name"
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
@@ -271,7 +290,7 @@ export default function CoverLetterGenerator() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role-name" className="text-foreground font-medium">Position/Role</Label>
-                      <Input 
+                      <Input
                         id="role-name"
                         value={roleName}
                         onChange={(e) => setRoleName(e.target.value)}
@@ -314,13 +333,13 @@ export default function CoverLetterGenerator() {
                     <Label className="text-foreground font-medium">Select Template Style</Label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {templates.map(template => (
-                        <div 
+                        <div
                           key={template.id}
                           onClick={() => setSelectedTemplate(template.id)}
                           className={`
                             p-4 rounded-xl border-2 cursor-pointer transition-all duration-300
-                            ${selectedTemplate === template.id 
-                              ? 'border-violet-500 bg-violet-500/5' 
+                            ${selectedTemplate === template.id
+                              ? 'border-violet-500 bg-violet-500/5'
                               : 'border-border/50 bg-background/50 hover:border-violet-500/50 hover:bg-secondary/50'}
                           `}
                         >
@@ -359,39 +378,39 @@ export default function CoverLetterGenerator() {
                   </div>
 
                   <div className="pt-6">
-                    <Button 
-                      onClick={handleGenerate} 
+                    <Button
+                      onClick={handleGenerate}
                       disabled={isGenerating || !selectedResume || !jobDescription}
                       className="w-full h-12 bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white text-base font-semibold rounded-xl transition-all duration-300 hover:scale-[1.01]"
                     >
                       {isGenerating ? (
                         <>
                           <CircleDashed className="mr-3 h-5 w-5 animate-spin" />
-                          Generating...
+                          AI is generating...
                         </>
                       ) : (
                         <>
                           <Sparkles className="mr-3 h-5 w-5" />
-                          Generate Cover Letter
+                          Generate AI Cover Letter
                         </>
                       )}
                     </Button>
-                    
+
                     {isGenerating && (
                       <div className="mt-5 bg-secondary/30 p-4 rounded-xl border border-border/50">
                         <div className="flex justify-between text-sm text-foreground font-medium mb-2">
-                          <span>Generating your cover letter...</span>
+                          <span>AI is writing your cover letter...</span>
                           <span>{generationProgress}%</span>
                         </div>
                         <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                          <div 
-                            className="bg-gradient-to-r from-violet-500 to-blue-500 h-2 rounded-full transition-all duration-300" 
+                          <div
+                            className="bg-gradient-to-r from-violet-500 to-blue-500 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${generationProgress}%` }}
                           ></div>
                         </div>
                       </div>
                     )}
-                    
+
                     {error && (
                       <div className="mt-5 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm flex items-start">
                         <AlertTriangle className="h-5 w-5 mr-3 flex-shrink-0 mt-0.5" />
@@ -422,7 +441,7 @@ export default function CoverLetterGenerator() {
                 <div className="flex justify-between items-center">
                   <CardTitle className="flex items-center text-foreground font-heading">
                     <FileText className={`h-5 w-5 mr-3 ${editorMode ? 'text-blue-500' : 'text-violet-500'}`} />
-                    {editorMode ? 'Edit Your Cover Letter' : 'Your Generated Cover Letter'}
+                    {editorMode ? 'Edit Your AI Cover Letter' : 'Your AI Generated Cover Letter'}
                   </CardTitle>
                   <Button
                     variant="ghost"
@@ -442,7 +461,7 @@ export default function CoverLetterGenerator() {
                   </Button>
                 </div>
                 <CardDescription className="text-muted-foreground mt-2 text-base">
-                  {editorMode 
+                  {editorMode
                     ? 'Make any necessary adjustments to your cover letter'
                     : `Cover letter for ${companyName || '[Company Name]'} - ${roleName || '[Position]'}`}
                 </CardDescription>
@@ -455,32 +474,35 @@ export default function CoverLetterGenerator() {
                     rows={18}
                     className={`
                       resize-none text-base leading-relaxed p-6 rounded-xl transition-all duration-300
-                      ${editorMode 
-                        ? 'border-blue-500/50 focus:border-blue-500 bg-background focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                      ${editorMode
+                        ? 'border-blue-500/50 focus:border-blue-500 bg-background focus:ring-1 focus:ring-blue-500 shadow-sm'
                         : 'border-border/40 bg-secondary/30 focus:bg-background'}
                     `}
                     readOnly={!editorMode}
                   />
-                  
+
                   <div className="flex flex-wrap gap-3 sm:gap-4 justify-end">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={handleCopy}
                       className="border-border/50 hover:bg-secondary/50 h-11 px-5 rounded-lg font-medium transition-colors"
                     >
                       <Copy className="mr-2 h-4 w-4" />
                       Copy to Clipboard
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleDownload}
                       className="bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white h-11 px-5 rounded-lg font-medium transition-all"
                     >
                       <Download className="mr-2 h-4 w-4" />
                       Download text
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setActiveTab("create")}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setActiveTab("create");
+                        setIsViewingSaved(false);
+                      }}
                       className="border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 h-11 px-5 rounded-lg font-medium transition-colors"
                     >
                       <ArrowRight className="mr-2 h-4 w-4" />

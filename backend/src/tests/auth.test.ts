@@ -5,6 +5,9 @@ interface FirebaseAuthError extends Error {
 }
 
 // --- Mock firebase-admin --- 
+jest.mock('puppeteer', () => ({
+    launch: jest.fn()
+}));
 const mockCreateUser = jest.fn();
 const mockSet = jest.fn();
 const mockDoc = jest.fn(() => ({ set: mockSet }));

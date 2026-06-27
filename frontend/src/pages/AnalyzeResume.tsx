@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResumeScoreCard } from "@/components/ResumeScoreCard";
@@ -7,8 +7,15 @@ import { Input } from "@/components/ui/input";
 // import { analyzeResume, parseResumeText, ResumeAnalysis } from "@/utils/resumeUtils";
 import { toast } from "sonner";
 import { CircleDashed, Upload, FileText, X, CheckCircle2, AlertTriangle, ChevronRight, ArrowRight, BarChart4, Lightbulb, Award } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import apiClient from "@/lib/api"; // Import apiClient
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Type for the nested analysis data
 interface ResumeAnalysis {
@@ -45,10 +52,55 @@ const AnalyzeResume = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedResumeId, setUploadedResumeId] = useState<string | null>(null);
+  const [uploadedResumeText, setUploadedResumeText] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<ResumeAnalysis | null>(null); // State to hold analysis results
   const [isDragActive, setIsDragActive] = useState(false);
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
 
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      try {
+        const res = await apiClient.get('/api/builder/workspaces');
+        if (res.data && res.data.workspaces) {
+          setWorkspaces(res.data.workspaces);
+        }
+      } catch (error) {
+        console.error("Failed to fetch workspaces", error);
+      }
+    };
+    fetchWorkspaces();
+  }, []);
+
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const uploadedId = searchParams.get("uploadedId");
+    if (uploadedId) {
+      const loadUploadedResume = async () => {
+        setIsLoading(true);
+        try {
+          const res = await apiClient.get(`/api/resumes/${uploadedId}`);
+          if (res.data?.resume) {
+            setUploadedResumeId(uploadedId);
+            if (res.data.resume.parsedText) {
+              setUploadedResumeText(res.data.resume.parsedText);
+            }
+            if (res.data.resume.analysis) {
+              setAnalysisResult(res.data.resume.analysis);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load uploaded resume", error);
+          toast.error("Failed to load the selected resume.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadUploadedResume();
+    }
+  }, [searchParams]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(null);
@@ -90,7 +142,7 @@ const AnalyzeResume = () => {
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       const fileType = droppedFile.type;
@@ -151,8 +203,8 @@ const AnalyzeResume = () => {
 
   // --- Analysis Trigger Function --- 
   const handleAnalysisTrigger = async () => {
-    if (!uploadedResumeId) {
-      toast.error("No uploaded resume ID found to analyze.");
+    if (!uploadedResumeId && !selectedWorkspaceId) {
+      toast.error("Please select or upload a resume to analyze.");
       return;
     }
 
@@ -161,7 +213,12 @@ const AnalyzeResume = () => {
 
     try {
       // Use the correct API response type here
-      const response = await apiClient.post<AnalyzeApiResponse>(`/api/resumes/${uploadedResumeId}/analyze`);
+      let response;
+      if (selectedWorkspaceId) {
+        response = await apiClient.post<AnalyzeApiResponse>(`/api/builder/workspace/${selectedWorkspaceId}/analyze`);
+      } else {
+        response = await apiClient.post<AnalyzeApiResponse>(`/api/resumes/${uploadedResumeId}/analyze`);
+      }
 
       // Store the nested 'analysis' object from the response data
       if (response.status === 200 && response.data?.analysis) { // Check for response.data.analysis
@@ -192,7 +249,53 @@ const AnalyzeResume = () => {
   const handleUploadAnother = () => {
     setFile(null);
     setUploadedResumeId(null);
+    setSelectedWorkspaceId("");
     setAnalysisResult(null);
+  };
+
+  const handleEditUploaded = async () => {
+    if (!file && !uploadedResumeText) {
+      toast.error("No file or resume text to import.");
+      return;
+    }
+    setIsLoading(true);
+    toast.info("Preparing your resume for the builder. This may take a few seconds...");
+    try {
+      let workspaceData;
+      let title = "Imported from Analysis";
+
+      if (file) {
+        // 1. Parse the file into workspace data
+        const formData = new FormData();
+        formData.append("resumeFile", file);
+        const parseRes = await apiClient.post("/api/builder/parse-upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        workspaceData = parseRes.data.workspaceData;
+        title = file.name.replace(/\.[^.]+$/, "") || title;
+      } else {
+        // Fallback to parsing text if we just loaded an existing ID
+        const parseRes = await apiClient.post("/api/builder/parse-text", {
+          parsedText: uploadedResumeText,
+          sourceFilename: "Uploaded Resume"
+        });
+        workspaceData = parseRes.data.workspaceData;
+      }
+
+      // 2. Save it as a new workspace
+      const saveRes = await apiClient.post("/api/builder/workspace", {
+        title: title,
+        workspaceData: workspaceData,
+      });
+
+      const newId = saveRes.data.resumeId;
+      toast.success("Resume imported successfully!");
+      navigate(`/dashboard/builder?id=${newId}`);
+    } catch (err) {
+      toast.error("Failed to import resume to builder.");
+      console.error(err);
+      setIsLoading(false);
+    }
   };
 
   // Helper function to determine score text color
@@ -208,9 +311,9 @@ const AnalyzeResume = () => {
       <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-12">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8 sm:mb-10 md:mb-14">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-foreground font-heading tracking-tight">AI Resume Analysis</h1>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-foreground font-heading tracking-tight">ATS Score & AI Analysis</h1>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2 leading-relaxed">
-              Upload your resume and get AI-powered insights to make it stand out to employers and applicant tracking systems
+              Upload your resume or select a saved draft to check its ATS score and get AI-powered insights to make it stand out.
             </p>
           </div>
 
@@ -248,15 +351,44 @@ const AnalyzeResume = () => {
                   <div className="p-1.5 rounded-md bg-violet-500/10 text-violet-500">
                     <Upload className="h-5 w-5" />
                   </div>
-                  Step 1: Upload Your Resume
+                  Step 1: Choose Your Resume
                 </CardTitle>
                 <CardDescription className="text-muted-foreground text-base">
-                  Upload your resume in PDF or DOCX format for AI analysis
+                  Upload a PDF/DOCX or select a saved resume draft from the builder
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
+
+                {workspaces.length > 0 && (
+                  <div className="mb-6 bg-card border border-border p-4 rounded-xl shadow-sm">
+                    <h3 className="text-sm font-semibold mb-2">Select a Saved Resume</h3>
+                    <Select value={selectedWorkspaceId} onValueChange={(val) => {
+                      setSelectedWorkspaceId(val);
+                      setFile(null); // Clear file if a workspace is chosen
+                      setUploadedResumeId(null);
+                    }}>
+                      <SelectTrigger className="w-full h-11 bg-background">
+                        <SelectValue placeholder="Choose a resume draft to analyze..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {workspaces.map((ws) => (
+                          <SelectItem key={ws.id} value={ws.id}>
+                            {ws.title || "Untitled Resume"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="relative flex items-center py-4">
+                  <div className="flex-grow border-t border-border"></div>
+                  <span className="flex-shrink-0 mx-4 text-muted-foreground text-sm font-medium">OR</span>
+                  <div className="flex-grow border-t border-border"></div>
+                </div>
+
                 {/* File input area */}
-                <div 
+                <div
                   className={`flex flex-col items-center py-6 sm:py-8 md:py-12 border-2 ${isDragActive ? 'border-primary bg-secondary' : 'border-dashed border-border bg-secondary hover:border-primary/50'} rounded-lg transition-all duration-200 ease-in-out`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -304,25 +436,45 @@ const AnalyzeResume = () => {
                     </div>
                   )}
                 </div>
-                {/* Upload Button */}
+                {/* Upload or Analyze Button */}
                 <div className="mt-8 flex justify-center">
-                  <Button
-                    onClick={handleUpload}
-                    disabled={!file || isLoading}
-                    className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white px-8 py-6 h-12 rounded-xl transition-all duration-300 text-base font-semibold"
-                  >
-                    {isLoading ? (
-                      <>
-                        <CircleDashed className="mr-2 h-5 w-5 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        Upload Resume
-                        <ArrowRight className="ml-2 h-5 w-5" />
-                      </>
-                    )}
-                  </Button>
+                  {!selectedWorkspaceId ? (
+                    <Button
+                      onClick={handleUpload}
+                      disabled={!file || isLoading}
+                      className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white px-8 py-6 h-12 rounded-xl transition-all duration-300 text-base font-semibold"
+                    >
+                      {isLoading ? (
+                        <>
+                          <CircleDashed className="mr-2 h-5 w-5 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          Upload Resume
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleAnalysisTrigger}
+                      disabled={isLoading}
+                      className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-blue-600 hover:shadow-lg hover:shadow-primary/25 text-white px-8 py-6 h-12 rounded-xl transition-all duration-300 text-base font-semibold"
+                    >
+                      {isLoading ? (
+                        <>
+                          <CircleDashed className="mr-2 h-5 w-5 animate-spin" />
+                          Analyzing Resume...
+                        </>
+                      ) : (
+                        <>
+                          Analyze Selected Resume
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -350,11 +502,11 @@ const AnalyzeResume = () => {
                     <p className="text-sm text-muted-foreground">Resume ID: {uploadedResumeId}</p>
                   </div>
                 </div>
-                
+
                 <p className="text-center mb-8 text-muted-foreground">
                   Click the button below to get detailed scores and suggestions to improve your resume
                 </p>
-                
+
                 {/* Button to trigger analysis */}
                 <div className="flex justify-center mt-8">
                   <Button
@@ -421,7 +573,7 @@ const AnalyzeResume = () => {
                             className="transition-all duration-1000 ease-out"
                           />
                         </svg>
-                        
+
                         {/* Score text in the center */}
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                           <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground">
@@ -431,7 +583,7 @@ const AnalyzeResume = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="max-w-md">
                       <h3 className="text-2xl font-bold mb-4 text-foreground font-heading">Score Summary</h3>
                       <div className="p-5 rounded-xl mb-4 bg-gradient-to-br from-violet-500/10 to-blue-500/10 border border-violet-500/20">
@@ -440,21 +592,21 @@ const AnalyzeResume = () => {
                           <div>
                             <p className="font-semibold mb-1 text-foreground text-lg">
                               {analysisResult.overallScore >= 80 ? 'Your resume is quite strong!' :
-                               analysisResult.overallScore >= 60 ? 'Your resume is on the right track' :
-                               'Your resume needs improvement'}
+                                analysisResult.overallScore >= 60 ? 'Your resume is on the right track' :
+                                  'Your resume needs improvement'}
                             </p>
                             <p className="text-sm text-muted-foreground leading-relaxed">
                               {analysisResult.overallScore >= 80 ? 'Your resume demonstrates strong formatting, content, and keyword optimization. Apply with confidence!' :
-                               analysisResult.overallScore >= 60 ? 'Your resume has solid elements but could use improvement in some areas to stand out more.' :
-                               'Your resume requires significant improvements to be competitive in today\'s job market.'}
+                                analysisResult.overallScore >= 60 ? 'Your resume has solid elements but could use improvement in some areas to stand out more.' :
+                                  'Your resume requires significant improvements to be competitive in today\'s job market.'}
                             </p>
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="text-sm text-muted-foreground">
-                        <p>Analysis performed {analysisResult.analysisTimestamp ? 
-                          new Date(analysisResult.analysisTimestamp).toLocaleString() : 
+                        <p>Analysis performed {analysisResult.analysisTimestamp ?
+                          new Date(analysisResult.analysisTimestamp).toLocaleString() :
                           'recently'}
                         </p>
                       </div>
@@ -556,14 +708,31 @@ const AnalyzeResume = () => {
                     variant="outline"
                     className="min-w-32 sm:min-w-36 h-10 sm:h-12 border-border hover:bg-secondary hover:text-foreground transition-all"
                   >
-                    <Upload className="mr-2 h-4 w-4" /> Upload Another
+                    <Upload className="mr-2 h-4 w-4" /> Analyze Another
                   </Button>
-                  <Button 
-                    onClick={() => navigate('/builder')}
-                    className="min-w-32 sm:min-w-36 h-10 sm:h-12 bg-primary hover:bg-primary/90 text-primary-foreground transition-all" 
+                  <Button
+                    onClick={() => navigate('/dashboard/builder')}
+                    className="min-w-32 sm:min-w-36 h-10 sm:h-12 bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
                   >
-                    <FileText className="mr-2 h-4 w-4" /> Build Improved Resume
+                    <FileText className="mr-2 h-4 w-4" /> Build New Resume
                   </Button>
+                  {selectedWorkspaceId ? (
+                    <Button
+                      onClick={() => navigate(`/dashboard/builder?id=${selectedWorkspaceId}`)}
+                      className="min-w-32 sm:min-w-36 h-10 sm:h-12 bg-violet-600 hover:bg-violet-700 text-white transition-all"
+                    >
+                      <FileText className="mr-2 h-4 w-4" /> Edit This Resume
+                    </Button>
+                  ) : (file || uploadedResumeText) && uploadedResumeId ? (
+                    <Button
+                      onClick={handleEditUploaded}
+                      disabled={isLoading}
+                      className="min-w-32 sm:min-w-36 h-10 sm:h-12 bg-violet-600 hover:bg-violet-700 text-white transition-all"
+                    >
+                      {isLoading ? <CircleDashed className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                      Edit Uploaded Resume
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             </div>

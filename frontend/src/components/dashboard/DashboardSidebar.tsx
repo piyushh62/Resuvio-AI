@@ -10,7 +10,9 @@ import {
   FileEdit,
   ChevronRight,
   Briefcase,
-  Gift
+  Gift,
+  FolderOpen,
+  Mic
 } from "lucide-react";
 import {
   Sidebar,
@@ -38,25 +40,25 @@ export function DashboardSidebar() {
       count: 0
     },
     {
-      title: "Resume Analysis",
+      title: "AI Resume Analysis",
       path: "/dashboard/analyze",
       icon: Upload,
       count: 0
     },
     {
-      title: "Resume Builder",
+      title: "AI Resume Builder",
       path: "/dashboard/builder",
       icon: FileText,
       count: 0
     },
     {
-      title: "Job Match",
+      title: "AI Job Match",
       path: "/dashboard/job-match",
       icon: BarChart,
       count: 0
     },
     {
-      title: "Cover Letters",
+      title: "AI Cover Letters",
       path: "/dashboard/cover-letter",
       icon: FileEdit,
       count: 0,
@@ -64,8 +66,8 @@ export function DashboardSidebar() {
     },
     {
       title: "My Documents",
-      path: "/dashboard/my-resumes",
-      icon: List,
+      path: "/dashboard/my-documents",
+      icon: FolderOpen,
       count: 0
     },
     {

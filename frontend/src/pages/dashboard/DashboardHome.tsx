@@ -1,16 +1,16 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { 
-  Upload, 
-  FileText, 
-  BarChart, 
-  FileEdit, 
-  ArrowUpRight, 
-  TrendingUp, 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
+import {
+  Upload,
+  FileText,
+  BarChart,
+  FileEdit,
+  ArrowUpRight,
+  TrendingUp,
+  Calendar,
+  CheckCircle2,
+  Clock,
   LineChart
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -79,7 +79,7 @@ export default function DashboardHome() {
   const currentDate = new Date();
   const hours = currentDate.getHours();
   const greeting = hours < 12 ? "Good morning" : hours < 18 ? "Good afternoon" : "Good evening";
-  
+
   const formattedDate = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -167,33 +167,33 @@ export default function DashboardHome() {
 
   // Quick actions (considered static configuration, not mock data to be removed)
   const quickActions = [
-    { 
-      title: "Analyze Resume", 
-      description: "Get instant feedback on your current resume", 
+    {
+      title: "Analyze Resume",
+      description: "Get instant feedback on your current resume",
       icon: <Upload className="h-5 w-5 text-violet-500" />,
       link: "/dashboard/analyze",
       color: "bg-card/50 backdrop-blur-sm text-foreground border-border/40 hover:border-violet-500/30 hover:bg-violet-500/5"
     },
-    { 
-      title: "Build New Resume", 
-      description: "Create a customized resume with AI assistance", 
+    {
+      title: "Build New Resume",
+      description: "Create a customized resume with AI assistance",
       icon: <FileText className="h-5 w-5 text-blue-500" />,
       link: "/dashboard/builder",
-      color: "bg-card/50 backdrop-blur-sm text-foreground border-border/40 hover:border-blue-500/30 hover:bg-blue-500/5" 
+      color: "bg-card/50 backdrop-blur-sm text-foreground border-border/40 hover:border-blue-500/30 hover:bg-blue-500/5"
     },
-    { 
-      title: "Match to Job", 
-      description: "Compare your resume to a specific job posting", 
+    {
+      title: "Match to Job",
+      description: "Compare your resume to a specific job posting",
       icon: <BarChart className="h-5 w-5 text-cyan-500" />,
       link: "/dashboard/job-match",
-      color: "bg-card/50 backdrop-blur-sm text-foreground border-border/40 hover:border-cyan-500/30 hover:bg-cyan-500/5" 
+      color: "bg-card/50 backdrop-blur-sm text-foreground border-border/40 hover:border-cyan-500/30 hover:bg-cyan-500/5"
     },
-    { 
-      title: "Generate Cover Letter", 
-      description: "Create a tailored cover letter for your application", 
+    {
+      title: "Generate Cover Letter",
+      description: "Create a tailored cover letter for your application",
       icon: <FileEdit className="h-5 w-5 text-violet-500" />,
       link: "/dashboard/cover-letter",
-      color: "bg-card/50 backdrop-blur-sm text-foreground border-border/40 hover:border-violet-500/30 hover:bg-violet-500/5" 
+      color: "bg-card/50 backdrop-blur-sm text-foreground border-border/40 hover:border-violet-500/30 hover:bg-violet-500/5"
     },
   ];
 
@@ -211,9 +211,9 @@ export default function DashboardHome() {
           </Link>
         </Button>
       </div>
-      
+
       {/* Stats Cards */}
-      <motion.div 
+      <motion.div
         variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
         initial="hidden"
         animate="show"
@@ -257,11 +257,11 @@ export default function DashboardHome() {
           ))
         )}
       </motion.div>
-      
+
       {/* Main content area - two column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column - Quick actions and Recent activity */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -276,8 +276,8 @@ export default function DashboardHome() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                 {quickActions.map((action, index) => (
-                  <Link 
-                    key={index} 
+                  <Link
+                    key={index}
                     to={action.link}
                     className={`group flex items-center p-4 rounded-xl border ${action.color} transition-all duration-300 hover:shadow-md hover:-translate-y-0.5`}
                   >
@@ -292,7 +292,7 @@ export default function DashboardHome() {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* Recent Activity */}
           <Card className="border border-border/40 shadow-sm bg-card/60 backdrop-blur-md">
             <CardHeader className="pb-2">
@@ -337,9 +337,9 @@ export default function DashboardHome() {
             </CardContent>
           </Card>
         </motion.div>
-        
+
         {/* Right column - Resume analytics and upcoming tasks */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
@@ -366,7 +366,7 @@ export default function DashboardHome() {
                 </div>
               ) : (
                 <div className="space-y-5 mt-2">
-                  {[ 
+                  {[
                     { label: "Keywords", value: resumeStrength.keywords },
                     { label: "Experience", value: resumeStrength.experience },
                     { label: "Skills", value: resumeStrength.skills },
@@ -393,7 +393,7 @@ export default function DashboardHome() {
               </CardFooter>
             )}
           </Card>
-          
+
           {/* Upcoming Tasks */}
           <Card className="border border-border/40 shadow-sm bg-card/60 backdrop-blur-md">
             <CardHeader className="pb-2">
@@ -408,7 +408,7 @@ export default function DashboardHome() {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* Tip of the day */}
           <Card className="border border-border/40 shadow-sm bg-gradient-to-br from-violet-500/5 to-blue-500/5">
             <CardContent className="p-5">
