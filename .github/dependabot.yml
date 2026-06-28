@@ -1,0 +1,165 @@
+version: 2
+updates:
+  # Frontend dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "piyushh62"
+    assignees:
+      - "piyushh62"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "automated"
+    commit-message:
+      prefix: "chore(frontend)"
+      include: "scope"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier*"
+          - "typescript*"
+          - "vitest*"
+          - "@vitest/*"
+        update-types:
+          - "minor"
+          - "patch"
+      ui-dependencies:
+        patterns:
+          - "@radix-ui/*"
+          - "lucide-react"
+          - "class-variance-authority"
+          - "clsx"
+          - "tailwind-merge"
+        update-types:
+          - "minor"
+          - "patch"
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@tanstack/*"
+          - "react-router*"
+          - "@hookform/*"
+          - "zod"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Backend dependencies
+  - package-ecosystem: "npm"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "piyushh62"
+    assignees:
+      - "piyushh62"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "automated"
+    commit-message:
+      prefix: "chore(backend)"
+      include: "scope"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier*"
+          - "typescript*"
+          - "jest*"
+          - "ts-jest"
+          - "supertest"
+        update-types:
+          - "minor"
+          - "patch"
+      firebase-deps:
+        patterns:
+          - "firebase-admin"
+          - "firebase-functions"
+        update-types:
+          - "minor"
+          - "patch"
+      express-ecosystem:
+        patterns:
+          - "express*"
+          - "cors"
+          - "helmet"
+          - "morgan"
+          - "multer"
+          - "mammoth"
+          - "pdf-parse"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Firebase Functions dependencies
+  - package-ecosystem: "npm"
+    directory: "/backend/functions"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "piyushh62"
+    assignees:
+      - "piyushh62"
+    labels:
+      - "dependencies"
+      - "functions"
+      - "automated"
+    commit-message:
+      prefix: "chore(functions)"
+      include: "scope"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "piyushh62"
+    assignees:
+      - "piyushh62"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+
+# Ignore specific dependencies that need manual updates
+ignore:
+  # Major version updates - review manually
+  - dependency-name: "*"
+    update-types: ["version-update:semver-major"]
+  
+  # Specific packages to ignore
+  - dependency-name: "react"
+    versions: ["19.x"]
+  - dependency-name: "express"
+    versions: ["5.x"]
+  - dependency-name: "typescript"
+    versions: ["6.x"]
+  - dependency-name: "node"
+    versions: ["22.x", "23.x"]
